@@ -1,13 +1,21 @@
-/*if the script is loaded synchronously:*/
 var app = angular
     .module("app", [])
-    .controller("MainCtrl", MainCtrl);
+    .service("Geo", Geo)
+    .controller("MainCtrl", MainCtrl)
 
-/*if the script is loaded asynchronously:*/
-//angular.bootstrap(document.documentElement, ["app"]);
-function MainCtrl () {
-    this.listTitle = "List of items";
-    this.items = [{
+//controller
+function MainCtrl(Geo) {
+
+
+    var mainCtrl = this
+
+    mainCtrl.getCoords = function () {
+        mainCtrl.coords = Geo.position.coords
+        mainCtrl.geoTimestamp = Geo.position.timestamp
+    }
+
+    mainCtrl.listTitle = "List of items";
+    mainCtrl.items = [{
         name: 'Scuba Diving Kit',
         id: 7297510
     }, {
@@ -21,4 +29,38 @@ function MainCtrl () {
         id: 1000983
     }];
 
+    console.log(this)
+    console.log("^From MainCtrl^")
+
+}
+
+
+
+
+//services
+
+
+function Geo() {
+
+    geo = this
+    navigator.geolocation.watchPosition(function (position) {
+        geo.position = position
+    }, function (error) {
+        console.log("Error in getting geolocation: ", error);
+    }, {
+        enableHighAccuracy: true
+    });
+    /*
+    returns methods:
+    Geo.position
+            .coords
+                .accuracy
+                .altitude
+                .altitudeAccuracy
+                .heading
+                .latitude
+                .longitude
+                .speed
+           .timestamp
+    */
 }

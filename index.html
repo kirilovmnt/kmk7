@@ -1,26 +1,32 @@
 <!doctype html>
 <html lang="en" ng-app="app">
+
 <head>
-	<meta charset="UTF-8">
-	<title>BUS API test</title>
-	
-<!--	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>-->
+    <meta charset="UTF-8">
+    <title>BUS API test</title>
+
+    <!--	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>-->
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
-<!--	<script src="busesAPIqueries.js"></script>-->
-	<script src="ng_app.js"></script>
+    <!--	<script src="busesAPIqueries.js"></script>-->
+    <script src="ng_app.js"></script>
 </head>
 
 <body>
     <div ng-controller="MainCtrl as main">
-        {{ main.listTitle }}
+        <button ng-click="main.getCoords()">Get Coordinates</button>
+        <br> Latitude: {{main.coords.latitude}}
+        <br> Longitude: {{main.coords.longitude}}
+        <br> Timestamp: {{main.geoTimestamp}}
+        <br> {{main.listTitle}}
         <ul>
             <li ng-repeat="item in main.items">
                 {{item.name}}
             </li>
         </ul>
-        
+
     </div>
 </body>
+
 </html>
 
 
@@ -32,27 +38,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-    <!--
+<!--
     <div id="test">
        <input type="text" id="lon">
 	   <input type="text" id="lat">
