@@ -2,9 +2,10 @@ var app = angular
     .module("app", [])
     .service("Geo", Geo)
     .controller("MainCtrl", MainCtrl)
+    .provider("date", date)
 
 //controller
-function MainCtrl(Geo) {
+function MainCtrl(Geo, date) {
 
 
     var mainCtrl = this
@@ -14,25 +15,30 @@ function MainCtrl(Geo) {
         mainCtrl.geoTimestamp = Geo.position.timestamp
     }
 
-    mainCtrl.listTitle = "List of items";
-    mainCtrl.items = [{
-        name: 'Scuba Diving Kit',
-        id: 7297510
-    }, {
-        name: 'Snorkel',
-        id: 0278916
-    }, {
-        name: 'Wet Suit',
-        id: 2389017
-    }, {
-        name: 'Beach Towel',
-        id: 1000983
-    }];
+    mainCtrl.date = date.showDate()
 
     console.log(this)
     console.log("^From MainCtrl^")
-
 }
+
+
+
+
+function date() {
+    this.$get = function () {
+        return {
+            showDate: function () {
+                var date = new Date()
+                return date
+            }
+        }
+    }
+}
+
+
+
+
+
 
 
 
