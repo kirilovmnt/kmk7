@@ -1,24 +1,72 @@
-/*if the script is loaded synchronously:*/
 var app = angular
     .module("app", [])
-    .controller("MainCtrl", MainCtrl);
+    .service("Geo", Geo)
+    .controller("MainCtrl", MainCtrl)
+    .provider("date", date)
 
-/*if the script is loaded asynchronously:*/
-//angular.bootstrap(document.documentElement, ["app"]);
-function MainCtrl () {
-   
-    this.listTitle = "List of items";
-    this.items = [{
-        name: 'Scuba Diving Kit',
-        id: 7297510
+//controller
+function MainCtrl(Geo, date) {
+
+
+    var mainCtrl = this
+
+    mainCtrl.getCoords = function () {
+        mainCtrl.coords = Geo.position.coords
+        mainCtrl.geoTimestamp = Geo.position.timestamp
+    }
+
+    mainCtrl.date = date.showDate()
+
+    console.log(this)
+    console.log("^From MainCtrl^")
+}
+
+
+
+
+function date() {
+    this.$get = function () {
+        return {
+            showDate: function () {
+                var date = new Date()
+                return date
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+//services
+
+
+function Geo() {
+
+    geo = this
+    navigator.geolocation.watchPosition(function (position) {
+        geo.position = position
+    }, function (error) {
+        console.log("Error in getting geolocation: ", error);
     }, {
-        name: 'Snorkel',
-        id: 0278916
-    }, {
-        name: 'Wet Suit',
-        id: 2389017
-    }, {
-        name: 'Beach Towel',
-        id: 1000983
-    }];
+        enableHighAccuracy: true
+    });
+    /*
+    returns methods:
+    Geo.position
+            .coords
+                .accuracy
+                .altitude
+                .altitudeAccuracy
+                .heading
+                .latitude
+                .longitude
+                .speed
+           .timestamp
+    */
 }
