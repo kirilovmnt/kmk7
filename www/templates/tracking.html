@@ -3,7 +3,7 @@
         <form class="list " id="tracking-form15">
             <ion-toggle ng-model="streamLocation" ng-change="toggleStreamLocation()" id="tracking-toggle5" toggle-class="toggle-positive">Stream My Bus's Location</ion-toggle>
             <div style="width: 283px; height: 28px;" class="spacer"></div>
-            <p class=" " style="color:#000000;font-size:16px;" id="tracking-markdown4">
+            <p class=" " style="color:#000000;font-size:16px;">
                 <strong>Find Next Departures from Bus Stops near:</strong>
             </p>
 
@@ -13,24 +13,61 @@
             </label>
             <div style="width: 283px; height: 10px;" class="spacer"></div>
 
-            <p class=" " style="color:#000000;font-size:16px;" id="stops-range-markdown">
+            <p class=" " style="color:#000000;font-size:16px;">
                 <strong>Limit the count of bus stops to:</strong>
             </p>
-            <ion-item data-componentid="range2" class="range range-positive ">
-                <input id="stops-range" max="15" min="1" value="5" type="range">
-            </ion-item>
-
+            <div ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()">
+                <ion-item data-componentid="range2" class="range range-positive ">
+                    <input id="stops-range" max="15" min="1" value="5" type="range">
+                </ion-item>
+            </div>
             <div style="width: 283px; height: 10px;" class="spacer"></div>
 
-            <button class=" button button-positive  button-block icon ion-android-search " id="tracking-button1" ng-click="queryApi()">Find bus stops</button>
+            <button class=" button button-positive  button-block icon ion-android-search " id="tracking-button1" ng-click="nearStops()">Find bus stops</button>
 
             <div style="width: 283px; height: 10px;" class="spacer"></div>
 
             <div style="margin: 0px; background-color: #387ef5; text-align: center;position:relative; right: 5%; width:105%">
-                <div id="map" style="width: 93%; height: 400px; position:relative; left: 7%"></div>
+                <div id="map" ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()" style="width: 93%; height: 400px; position:relative; left: 7%"></div>
             </div>
 
 
         </form>
+
+        <div class="list card">
+            <div style="" class="item item-body ">
+                <p class=" " style="margin-top:0px;color:#000000;">Some friendly
+                    <strong>markdown</strong>
+                </p>
+
+
+
+
+                <!--            tracker lists-->
+                <ion-list class=" " id="tracker-list">
+                    <ion-item ng-repeat="busStop in busStopsList track by $index" style="" class="tracker-list-item item-icon-left item-icon-right" ng-click="findBuses()">
+
+                        <i class="icon ion-more"></i>
+
+                        <div class="list card">
+                            <div style="" class="item item-body ">
+
+                                <strong>{{busStop.name}} ({{busStop.indicator}})</strong>
+
+
+                                <ion-list class=" " id="tracker-list-buses">
+                                    <ion-item ng-repeat="bus in busesList" style="" class="tracker-list-item item-icon-left item-icon-right" ng-click="findBuses()">
+                                        <i class="icon ion-android-bus"></i>{{bus.line}} to {{bus.direction}}
+                                        <i class="icon ion-android-arrow-dropright icon-accessory"></i>
+                                    </ion-item>
+                                </ion-list>
+                            </div>
+                        </div>
+
+
+                    </ion-item>
+                </ion-list>
+            </div>
+        </div>
     </ion-content>
 </ion-view>
