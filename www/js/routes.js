@@ -46,7 +46,7 @@ angular.module('app.routes', [])
         abstract: true
     })
 
-    $urlRouterProvider.otherwise('/page1/page4')
+    $urlRouterProvider.otherwise('/page1/page2')
 
 
 

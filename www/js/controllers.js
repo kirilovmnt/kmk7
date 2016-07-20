@@ -1,6 +1,6 @@
 angular.module('app.controllers', [])
 
-.controller('trackingCtrl', function ($scope, $ionicSideMenuDelegate, $ionicScrollDelegate, $location, $http) {
+.controller('trackingCtrl', function ($scope, $ionicSideMenuDelegate, $ionicScrollDelegate, $location, $http, $state) {
 
 
     trackCtrl = this
@@ -21,8 +21,9 @@ angular.module('app.controllers', [])
 
     var map = new google.maps.Map($scope.mapElement, $scope.mapOptions);
     var marker = new google.maps.Marker({
-        title: "You are here",
-        icon: "img/blue-dot.png"
+        title: "Your location",
+        icon: "img/pinpoint.gif",
+        optimized: false
     })
     marker.setMap(map);
 
@@ -33,9 +34,10 @@ angular.module('app.controllers', [])
 
             $scope.initialLocation = position;
             var center = {
-                    lat: $scope.initialLocation.coords.latitude,
-                    lng: $scope.initialLocation.coords.longitude
-                }
+                lat: $scope.initialLocation.coords.latitude,
+                lng: $scope.initialLocation.coords.longitude
+            }
+            document.getElementById("trackingSearch").value = center.lat + ", " + center.lng
                 //set map center to initial position
             map.setCenter(center)
             map.setZoom(13);
@@ -71,10 +73,10 @@ angular.module('app.controllers', [])
     $scope.marker = marker
 
 
-    //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ map init and geolocation handling ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    //    ____________________________________________________________________________________________________________________
+    //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ map init and geolocation handling ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //    ___________________________________________________________________________________________________________________
 
-    //    vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv             controls              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+    //    vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv             controls              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
 
     //disable and enable dragging
@@ -102,11 +104,6 @@ angular.module('app.controllers', [])
     }
 
 
-    //range control
-    $scope.stopsRange = document.getElementById("stops-range").value
-
-
-
     //get coordinates from map tap/click
     google.maps.event.addListener(map, 'click', function (e) {
         $scope.searchCoords = {
@@ -117,6 +114,9 @@ angular.module('app.controllers', [])
     })
 
 
+    $scope.stopsRange = document.getElementById("stops-range").value
+
+
     //query Transport API for nearest bus stops
     $scope.nearStops = function () {
         var app_id = "928e6aca"
@@ -124,6 +124,7 @@ angular.module('app.controllers', [])
         var baseUrl = "https://transportapi.com/v3/uk/bus/stops/near.json?"
 
         var latLng = document.getElementById("trackingSearch").value
+        $scope.stopsRange = document.getElementById("stops-range").value
         latLng = latLng.replace(" ", "")
         latLng = latLng.replace(",", "&lon=")
 
@@ -142,43 +143,115 @@ angular.module('app.controllers', [])
         } //for further consideration to exclude jQuery AJAX lib
 
         $.getJSON(url, function (data, status) {
+
+            for (i = 0; i < data.stops.length; i++) {
+                var busStop = data.stops[i]
+                busStop.marker = new google.maps.Marker({
+                    busStop: busStop.atcocode,
+                    position: new google.maps.LatLng(busStop.latitude, busStop.longitude),
+                    map: map
+                })
+                busStop.infowindow = new google.maps.InfoWindow({
+                    content: busStop.indicator + " " + busStop.name
+                })
+            }
             $scope.busStopsList = data.stops
             console.table($scope.busStopsList)
 
+            map.setZoom(15)
+
+            $scope.$apply()
             $location.hash("tracker-list")
             $ionicScrollDelegate.anchorScroll(true)
         })
         console.log(url)
-
     }
+
 
 
     //query Transport API for buses from selected bus stop
-    $scope.findBuses = function () {
+    $scope.findBuses = function (busStop) {
+        alert("click")
         var app_id = "928e6aca"
         var app_key = "aa747294d32b6f68b6a827ed7f79242f"
         var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
-        var atcocode = this.busStop.atcocode
-
-        var url = baseUrl + atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
+        var url = baseUrl + busStop.atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
 
         console.log(url)
-        $.getJSON(url, function (data, status) {
-            var busesList = []
 
-            Object.keys(data.departures).forEach(function (key, index) {
-                var bus = data.departures[key][0]
-                busesList.push({
-                    line: bus.line,
-                    direction: bus.direction
+        if (!(busStop.busesList)) {
+            $.getJSON(url, function (data, status) {
+                $scope.shownBusesList = busStop.busesList = []
+
+                Object.keys(data.departures).forEach(function (key, index) {
+                    var bus = data.departures[key][0]
+                    busStop.busesList.push(bus)
                 })
+                showInfoWindow(busStop, true)
+                $state.go($state.current, {}, {
+                    reload: true
+                });
+                $scope.$apply()
             })
-            $scope.busesList = busesList
-            console.log($scope.busesList)
+        }
+        console.log(busStop.busesList)
+
+        if ($scope.isBusesListShown(busStop.busesList)) {
+            $scope.shownBusesList = null;
+            showInfoWindow(busStop, false)
+        } else {
+            $scope.shownBusesList = busStop.busesList
+            showInfoWindow(busStop, true)
+        }
+    }
+
+
+
+    $scope.isBusesListShown = function (list) {
+        return $scope.shownBusesList === list;
+    }
+
+    $scope.busRoute = function (bus, busStop) {
+        var operator = bus.operator
+        var line = bus.line
+        var dir = bus.dir
+        var atcocode = busStop.atcocode
+        var app_id = "928e6aca"
+        var app_key = "aa747294d32b6f68b6a827ed7f79242f"
+        var url = "https://transportapi.com/v3/uk/bus/route/" + operator + "/" + line + "/" + dir + "/" + atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
+
+        $.getJSON(url, function (data, status) {
+            console.table(data.stops)
+            var polyLineCoords = []
+            for (i = 0; i < data.stops.length; i++) {
+                polyLineCoords.push({
+                    lat: data.stops[i].latitude,
+                    lng: data.stops[i].longitude
+                })
+            }
+            $scope.polyLine = new google.maps.Polyline({
+                path: polyLineCoords,
+                geodesic: false,
+                strokeColor: "#FF0000",
+                strokeOpacity: 0.9,
+                strokeWeight: 4
+            })
+            $scope.polyLine.setMap(map)
         })
+
+    }
+
+
+    //control infowindows
+    function showInfoWindow(busStop, status) {
+        if (status) {
+            busStop.infowindow.close() //need to track the right infowindow to close before opening another one
+            busStop.infowindow.open(map, busStop.marker)
+        } else {
+            busStop.infowindow.close()
+        }
     }
 })
-
 
 
 

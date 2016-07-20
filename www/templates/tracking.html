@@ -14,7 +14,7 @@
             <div style="width: 283px; height: 10px;" class="spacer"></div>
 
             <p class=" " style="color:#000000;font-size:16px;">
-                <strong>Limit the count of bus stops to:</strong>
+                <strong>Limit the count of bus stops to: {{stopsRange}}</strong>
             </p>
             <div ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()">
                 <ion-item data-componentid="range2" class="range range-positive ">
@@ -33,40 +33,34 @@
 
 
         </form>
-
         <div class="list card">
             <div style="" class="item item-body ">
-                <p class=" " style="margin-top:0px;color:#000000;">Some friendly
-                    <strong>markdown</strong>
+                <p class=" " style="margin-top:0px;color:#000000;">
+                    <strong>List of the nearest stops</strong>
                 </p>
 
 
+                <!--tracker's lists of bus stops and buses-->
+                <ion-list id="tracker-list">
+                    <div ng-repeat="busStop in busStopsList">
+                        <ion-item class="item-stable" ng-click="findBuses(busStop)" href="#" ng-class="{active: isBusesListShown(busStop.busesList)}">
+                            <i class="icon" ng-class="isBusesListShown(busStop.busesList) ? 'ion-minus' : 'ion-plus'"></i> &nbsp;
+                            <strong>{{busStop.indicator}} {{busStop.name}} </strong>
+                            <br><strong>{{busStop.distance}} m</strong> from searched location
+                        </ion-item>
+                        <ion-item class="item-accordion" ng-repeat="bus in busStop.busesList" ng-click="busRoute(bus, busStop)" ng-show="isBusesListShown(busStop.busesList)">
 
+                            <i class="icon ion-android-bus"></i> &nbsp; <strong>{{bus.line}}</strong> to {{bus.direction}}
+                            <br>&nbsp;&nbsp;<i class="icon ion-android-time"></i> &nbsp;
+                            <strong>{{bus.aimed_departure_time}}</strong> ({{bus.dir}})
 
-                <!--            tracker lists-->
-                <ion-list class=" " id="tracker-list">
-                    <ion-item ng-repeat="busStop in busStopsList track by $index" style="" class="tracker-list-item item-icon-left item-icon-right" ng-click="findBuses()">
-
-                        <i class="icon ion-more"></i>
-
-                        <div class="list card">
-                            <div style="" class="item item-body ">
-
-                                <strong>{{busStop.name}} ({{busStop.indicator}})</strong>
-
-
-                                <ion-list class=" " id="tracker-list-buses">
-                                    <ion-item ng-repeat="bus in busesList" style="" class="tracker-list-item item-icon-left item-icon-right" ng-click="findBuses()">
-                                        <i class="icon ion-android-bus"></i>{{bus.line}} to {{bus.direction}}
-                                        <i class="icon ion-android-arrow-dropright icon-accessory"></i>
-                                    </ion-item>
-                                </ion-list>
-                            </div>
-                        </div>
-
-
-                    </ion-item>
+                        </ion-item>
+                    </div>
                 </ion-list>
+
+
+
+
             </div>
         </div>
     </ion-content>
