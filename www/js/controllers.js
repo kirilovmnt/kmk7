@@ -1,6 +1,12 @@
 angular.module('app.controllers', [])
 
-.controller('trackingCtrl', function ($scope, $ionicSideMenuDelegate, $ionicScrollDelegate, $location, $http, $state) {
+.controller('trackingCtrl', function ($scope, $ionicSideMenuDelegate, $ionicScrollDelegate, $location) {
+
+    $scope.test = function () {
+        alert("test click works")
+    }
+
+    $scope.list = ["asd", "asdsgf", "fdshgfds", "gfsdfg", "gsdfg", "gg", "gfdsdfg"]
 
 
     trackCtrl = this
@@ -47,6 +53,9 @@ angular.module('app.controllers', [])
         //cordova geo plugin code goes here
     }
 
+    $scope.map = map
+    $scope.marker = marker
+
 
     //streaming location (to be moved to service if possible not singleton)
     function streamLocation() {
@@ -61,7 +70,7 @@ angular.module('app.controllers', [])
                         lng: $scope.currentLocation.coords.longitude
                     })
                     //for debugging purposes
-                console.log(position.timestamp + " <- Timestamp of response \n" + position.coords.latitude + " <- current Latitude \n" + position.coords.longitude + " <- current Longitude")
+                    // console.log(position.timestamp + " <- Timestamp of response \n" + position.coords.latitude + " <- current Latitude \n" + position.coords.longitude + " <- current Longitude")
             })
         } else {
             //cordova geo plugin code goes here
@@ -69,14 +78,16 @@ angular.module('app.controllers', [])
     }
 
 
-    $scope.map = map
-    $scope.marker = marker
+
 
 
     //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ map init and geolocation handling ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     //    ___________________________________________________________________________________________________________________
 
     //    vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv             controls              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+
+
 
 
     //disable and enable dragging
@@ -144,40 +155,39 @@ angular.module('app.controllers', [])
 
         $.getJSON(url, function (data, status) {
 
-            for (i = 0; i < data.stops.length; i++) {
-                var busStop = data.stops[i]
-                busStop.marker = new google.maps.Marker({
-                    busStop: busStop.atcocode,
-                    position: new google.maps.LatLng(busStop.latitude, busStop.longitude),
-                    map: map
-                })
-                busStop.infowindow = new google.maps.InfoWindow({
-                    content: busStop.indicator + " " + busStop.name
-                })
-            }
-            $scope.busStopsList = data.stops
-            console.table($scope.busStopsList)
+                for (i = 0; i < data.stops.length; i++) {
+                    var busStop = data.stops[i]
+                    busStop.marker = new google.maps.Marker({
+                        busStop: busStop.atcocode,
+                        position: new google.maps.LatLng(busStop.latitude, busStop.longitude),
+                        map: map
+                    })
+                    busStop.infowindow = new google.maps.InfoWindow({
+                        content: busStop.indicator + " " + busStop.name
+                    })
+                }
+                $scope.busStopsList = data.stops
+                    //console.table($scope.busStopsList)
 
-            map.setZoom(15)
+                map.setZoom(15)
 
-            $scope.$apply()
-            $location.hash("tracker-list")
-            $ionicScrollDelegate.anchorScroll(true)
-        })
-        console.log(url)
+                $scope.$apply()
+                $location.hash("tracker-list")
+                $ionicScrollDelegate.anchorScroll(true)
+            })
+            //console.log(url)
     }
-
 
 
     //query Transport API for buses from selected bus stop
     $scope.findBuses = function (busStop) {
-        alert("click")
+
         var app_id = "928e6aca"
         var app_key = "aa747294d32b6f68b6a827ed7f79242f"
         var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
         var url = baseUrl + busStop.atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
 
-        console.log(url)
+        //console.log(url)
 
         if (!(busStop.busesList)) {
             $.getJSON(url, function (data, status) {
@@ -188,13 +198,10 @@ angular.module('app.controllers', [])
                     busStop.busesList.push(bus)
                 })
                 showInfoWindow(busStop, true)
-                $state.go($state.current, {}, {
-                    reload: true
-                });
                 $scope.$apply()
             })
         }
-        console.log(busStop.busesList)
+        //console.log(busStop.busesList)
 
         if ($scope.isBusesListShown(busStop.busesList)) {
             $scope.shownBusesList = null;
@@ -221,7 +228,7 @@ angular.module('app.controllers', [])
         var url = "https://transportapi.com/v3/uk/bus/route/" + operator + "/" + line + "/" + dir + "/" + atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
 
         $.getJSON(url, function (data, status) {
-            console.table(data.stops)
+            //console.table(data.stops)
             var polyLineCoords = []
             for (i = 0; i < data.stops.length; i++) {
                 polyLineCoords.push({
@@ -271,6 +278,5 @@ angular.module('app.controllers', [])
 
 
 .controller('timetablesCtrl', function ($scope) {
-
 
 })
