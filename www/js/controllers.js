@@ -1,12 +1,6 @@
 angular.module('app.controllers', [])
 
-.controller('trackingCtrl', function ($scope, $ionicSideMenuDelegate, $ionicScrollDelegate, $location) {
-
-    $scope.test = function () {
-        alert("test click works")
-    }
-
-    $scope.list = ["asd", "asdsgf", "fdshgfds", "gfsdfg", "gsdfg", "gg", "gfdsdfg"]
+.controller('trackingCtrl', function ($scope, $state, $ionicSideMenuDelegate, $ionicScrollDelegate, $location) {
 
 
     trackCtrl = this
@@ -124,9 +118,12 @@ angular.module('app.controllers', [])
         document.getElementById("trackingSearch").value = $scope.searchCoords.lat + ", " + $scope.searchCoords.lon
     })
 
-
     $scope.stopsRange = document.getElementById("stops-range").value
 
+    //range control
+    $scope.rangeChange = function () {
+        $scope.stopsRange = document.getElementById("stops-range").value
+    }
 
     //query Transport API for nearest bus stops
     $scope.nearStops = function () {
@@ -135,7 +132,7 @@ angular.module('app.controllers', [])
         var baseUrl = "https://transportapi.com/v3/uk/bus/stops/near.json?"
 
         var latLng = document.getElementById("trackingSearch").value
-        $scope.stopsRange = document.getElementById("stops-range").value
+            //        $scope.stopsRange = document.getElementById("stops-range").value
         latLng = latLng.replace(" ", "")
         latLng = latLng.replace(",", "&lon=")
 
@@ -198,6 +195,9 @@ angular.module('app.controllers', [])
                     busStop.busesList.push(bus)
                 })
                 showInfoWindow(busStop, true)
+                $state.go($state.current, {}, {
+                    reload: true
+                });
                 $scope.$apply()
             })
         }

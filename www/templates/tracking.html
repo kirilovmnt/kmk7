@@ -18,7 +18,7 @@
             </p>
             <div ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()">
                 <ion-item data-componentid="range2" class="range range-positive ">
-                    <input id="stops-range" max="15" min="1" value="5" type="range">
+                    <input ng-model="range" id="stops-range" max="15" min="1" value="8" type="range" ng-change="rangeChange()">
                 </ion-item>
             </div>
             <div style="width: 283px; height: 10px;" class="spacer"></div>
