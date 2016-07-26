@@ -1,77 +1,11 @@
 angular.module('app.controllers', [])
 
-.controller('trackingCtrl', function ($scope, $state, $ionicSideMenuDelegate, $ionicScrollDelegate, $location) {
+.controller('trackingCtrl', function ($scope, $state, $ionicSideMenuDelegate, $ionicScrollDelegate, $location, initMap, geolocation) {
 
 
     trackCtrl = this
-
-
-    $scope.mapOptions = { //yet to be passed to other tabs
-        center: {
-            lat: 54.5,
-            lng: -4
-        },
-        zoom: 5,
-        minZoom: 5
-    }
-
-
-    //initialize map and marker
-    $scope.mapElement = document.getElementById('map');
-
-    var map = new google.maps.Map($scope.mapElement, $scope.mapOptions);
-    var marker = new google.maps.Marker({
-        title: "Your location",
-        icon: "img/pinpoint.gif",
-        optimized: false
-    })
-    marker.setMap(map);
-
-
-    //initial location
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-
-            $scope.initialLocation = position;
-            var center = {
-                lat: $scope.initialLocation.coords.latitude,
-                lng: $scope.initialLocation.coords.longitude
-            }
-            document.getElementById("trackingSearch").value = center.lat + ", " + center.lng
-                //set map center to initial position
-            map.setCenter(center)
-            map.setZoom(13);
-            marker.setPosition(center)
-        })
-    } else {
-        //cordova geo plugin code goes here
-    }
-
-    $scope.map = map
-    $scope.marker = marker
-
-
-    //streaming location (to be moved to service if possible not singleton)
-    function streamLocation() {
-
-        if (navigator.geolocation) {
-            trackCtrl.watchID = navigator.geolocation.watchPosition(function (position) {
-
-                //set marker to current position
-                $scope.currentLocation = position;
-                marker.setPosition({
-                        lat: $scope.currentLocation.coords.latitude,
-                        lng: $scope.currentLocation.coords.longitude
-                    })
-                    //for debugging purposes
-                    // console.log(position.timestamp + " <- Timestamp of response \n" + position.coords.latitude + " <- current Latitude \n" + position.coords.longitude + " <- current Longitude")
-            })
-        } else {
-            //cordova geo plugin code goes here
-        }
-    }
-
-
+    initMap.domElement(document.getElementById("map"))
+    geolocation.setMapCenter()
 
 
 
@@ -100,10 +34,10 @@ angular.module('app.controllers', [])
             if (!trackCtrl.busForTracking) {
                 this.streamLocation = false
             } else {
-                streamLocation()
+                geolocation.watchPosition()
             }
         } else {
-            navigator.geolocation.clearWatch(trackCtrl.watchID)
+            navigator.geolocation.clearWatch(geolocation.watchID)
             trackCtrl.busForTracking = null
         }
     }
