@@ -1,12 +1,27 @@
 angular.module('app.controllers', [])
 
-.controller('trackingCtrl', function ($scope, $state, $ionicSideMenuDelegate, $ionicScrollDelegate, $location, initMap, geolocation) {
+.controller('trackingCtrl', function ($scope, $state, $ionicSideMenuDelegate, $ionicScrollDelegate, $ionicTabsDelegate, $location, initMap, geoServ) {
+
 
 
     trackCtrl = this
-    initMap.domElement(document.getElementById("map"))
-    geolocation.setMapCenter()
 
+    var thisTab = $ionicTabsDelegate.selectedIndex()
+    var thisDomElement = document.getElementById("map")
+    initMap.initIn(thisTab, thisDomElement)
+    geoServ.setMapCenter(thisTab)
+    var map = initMap.maps[thisTab]
+
+
+
+
+    $scope.test = function () {
+        var marker = initMap.markers[thisTab]
+        marker.setPosition({
+            lat: geoServ.initialLocation.lat + 0.01,
+            lng: geoServ.initialLocation.lng + 0.01
+        })
+    }
 
 
     //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ map init and geolocation handling ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -34,16 +49,16 @@ angular.module('app.controllers', [])
             if (!trackCtrl.busForTracking) {
                 this.streamLocation = false
             } else {
-                geolocation.watchPosition()
+                geoServ.watchPosition(thisTab)
             }
         } else {
-            navigator.geolocation.clearWatch(geolocation.watchID)
+            navigator.geolocation.clearWatch(geoServ.watchID)
             trackCtrl.busForTracking = null
         }
     }
 
 
-    //get coordinates from map tap/click
+    //get coordinates from map tap / click
     google.maps.event.addListener(map, 'click', function (e) {
         $scope.searchCoords = {
             lat: e.latLng.lat(),
@@ -199,8 +214,12 @@ angular.module('app.controllers', [])
 
 
 
-.controller('journeyPlannerCtrl', function ($scope) {
-
+.controller('journeyPlannerCtrl', function ($scope, $ionicTabsDelegate, initMap, geoServ) {
+    var thisTab = $ionicTabsDelegate.selectedIndex()
+    var thisDomElement = document.getElementById("map2")
+    initMap.initIn(thisTab, thisDomElement)
+    geoServ.setMapCenter(thisTab)
+    var map = initMap.maps[thisTab]
 })
 
 
@@ -210,7 +229,10 @@ angular.module('app.controllers', [])
 
 
 
-
-.controller('timetablesCtrl', function ($scope) {
-
+.controller('timetablesCtrl', function ($scope, $ionicTabsDelegate, initMap, geoServ) {
+    var thisTab = $ionicTabsDelegate.selectedIndex()
+    var thisDomElement = document.getElementById("map3")
+    initMap.initIn(thisTab, thisDomElement)
+    geoServ.setMapCenter(thisTab)
+    var map = initMap.maps[thisTab]
 })

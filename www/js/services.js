@@ -4,7 +4,7 @@ angular.module('app.services', [])
 
 .service('initMap', [function () {
 
-    var initMapSrv = this
+    var initMap = this
     var mapOptions = {
         center: {
             lat: 54.5,
@@ -14,80 +14,95 @@ angular.module('app.services', [])
         minZoom: 5
     }
 
-    initMapSrv.domElement = function (element) {
-        initMapSrv.map = new google.maps.Map(element, mapOptions);
+    initMap.initIn = function (tabIndex, element) {
+        if (typeof (initMap.maps) == "undefined") {
+            initMap.maps = []
+        }
+        if (typeof (initMap.markers) == "undefined") {
+            initMap.markers = []
+        }
+        initMap.maps[tabIndex] = new google.maps.Map(element, mapOptions);
+        initMap.markers[tabIndex] = new google.maps.Marker({
+            title: "Your location",
+            icon: "img/pinpoint.gif",
+            optimized: false
+        })
     }
-    initMapSrv.marker = new google.maps.Marker({
-        title: "Your location",
-        icon: "img/pinpoint.gif",
-        optimized: false
-    })
-
 }])
 
 
 
-.service('geolocation', ['initMap', function (initMap) {
-    var geolocation = this
+.service('geoServ', ['initMap', function (initMap) {
+    var geoServ = this
 
 
-    geolocation.setMapCenter = function () {
+    geoServ.setMapCenter = function (tabIndex) {
+        var map = initMap.maps[tabIndex]
+        var marker = initMap.markers[tabIndex]
+
+        var geoSetSuccess = function (position) {
+            var center = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            }
+            geoServ.initialLocation = center
+
+            map.setCenter(center)
+            map.setZoom(13);
+            marker.setPosition(center)
+            marker.setMap(map);
+        }
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(geoSetSuccess, geoError, geoOptions)
         } else {
-            //cordova geo plugin code goes here
-        }
-    }
-    geolocation.watchPosition = function () {
-        if (navigator.geolocation) {
-            this.watchID = navigator.geolocation.watchPosition(geoWatchSuccess, geoError, geoOptions)
-        } else {
-            //cordova geo plugin code goes here
+            alert("Your device does not support geolocation")
         }
     }
 
-    var geoSetSuccess = function (position) {
-        var center = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-        }
+    geoServ.watchPosition = function (tabIndex) {
+        var marker = initMap.markers[tabIndex]
 
-        initMap.map.setCenter(center)
-        initMap.map.setZoom(13);
-        initMap.marker.setPosition(center)
-        initMap.marker.setMap(initMap.map);
-    }
+        var geoWatchSuccess = function (position) {
 
-    var geoWatchSuccess = function (position) {
-        //set marker to current position
-        initMap.marker.setPosition({
+            //set marker to current position
+            marker.setPosition({
                 lat: position.coords.latitude,
                 lng: position.coords.longitude
             })
+
             //for debugging purposes
-        console.log(position.timestamp + " <- Timestamp of response")
+            console.log(position.timestamp)
+            document.getElementById("trackingSearch").value = position.timestamp
+        }
+        if (navigator.geolocation) {
+            this.watchID = navigator.geolocation.watchPosition(geoWatchSuccess, geoError, geoOptions)
+        } else {
+            alert("Your device does not support geolocation")
+        }
     }
+
 
     var geoError = function (error) {
         switch (error.code) {
             case error.PERMISSION_DENIED:
-                x.innerHTML = "User denied the request for Geolocation."
+                alert("User denied the request for Geolocation.")
                 break;
             case error.POSITION_UNAVAILABLE:
-                x.innerHTML = "Location information is unavailable."
+                alert("Location information is unavailable.")
                 break;
             case error.TIMEOUT:
-                x.innerHTML = "The request to get user location timed out."
+                alert("The request to get user location timed out." + "\ntabIndex = ")
                 break;
             case error.UNKNOWN_ERROR:
-                x.innerHTML = "An unknown error occurred."
+                alert("An unknown error occurred.")
                 break;
         }
     }
 
     var geoOptions = {
         enableHighAccuracy: true,
-        maximumAge: 30000,
+        maximumAge: 3000,
         timeout: 27000
     }
 }])
