@@ -1,8 +1,6 @@
 angular.module('app.controllers', [])
 
-.controller('trackingCtrl', function ($scope, $state, $ionicSideMenuDelegate, $ionicScrollDelegate, $ionicTabsDelegate, $location, initMap, geoServ) {
-
-
+.controller('trackingCtrl', function ($scope, $state, $window, $ionicSideMenuDelegate, $ionicScrollDelegate, $ionicTabsDelegate, $location, initMap, geoServ, mapResize) {
 
     trackCtrl = this
 
@@ -11,25 +9,17 @@ angular.module('app.controllers', [])
     initMap.initIn(thisTab, thisDomElement)
     geoServ.setMapCenter(thisTab)
     var map = initMap.maps[thisTab]
+    $scope.$on('$ionicView.afterEnter', function () {
+        mapResize.thisMap(thisTab)
+    });
 
 
+    /*
+          ^ ^ ^ ^ ^ ^ map init and geolocation handling ^ ^ ^ ^ ^ ^
+          _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-
-    $scope.test = function () {
-        var marker = initMap.markers[thisTab]
-        marker.setPosition({
-            lat: geoServ.initialLocation.lat + 0.01,
-            lng: geoServ.initialLocation.lng + 0.01
-        })
-    }
-
-
-    //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ map init and geolocation handling ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    //    ___________________________________________________________________________________________________________________
-
-    //    vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv             controls              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-
-
+          v v v v v v             controls              v v v v v v
+    */
 
 
 
@@ -41,11 +31,16 @@ angular.module('app.controllers', [])
         $ionicSideMenuDelegate.canDragContent(true)
     }
 
+    //range control
+    $scope.rangeChange = function () {
+        $scope.stopsRange = document.getElementById("stops-range").value
+    }
 
     //toggle control
     $scope.toggleStreamLocation = function () {
         if (this.streamLocation) {
             trackCtrl.busForTracking = prompt("Which bus are you on?")
+
             if (!trackCtrl.busForTracking) {
                 this.streamLocation = false
             } else {
@@ -57,7 +52,6 @@ angular.module('app.controllers', [])
         }
     }
 
-
     //get coordinates from map tap / click
     google.maps.event.addListener(map, 'click', function (e) {
         $scope.searchCoords = {
@@ -67,12 +61,10 @@ angular.module('app.controllers', [])
         document.getElementById("trackingSearch").value = $scope.searchCoords.lat + ", " + $scope.searchCoords.lon
     })
 
+    //stops range
     $scope.stopsRange = document.getElementById("stops-range").value
 
-    //range control
-    $scope.rangeChange = function () {
-        $scope.stopsRange = document.getElementById("stops-range").value
-    }
+
 
     //query Transport API for nearest bus stops
     $scope.nearStops = function () {
@@ -81,23 +73,10 @@ angular.module('app.controllers', [])
         var baseUrl = "https://transportapi.com/v3/uk/bus/stops/near.json?"
 
         var latLng = document.getElementById("trackingSearch").value
-            //        $scope.stopsRange = document.getElementById("stops-range").value
         latLng = latLng.replace(" ", "")
         latLng = latLng.replace(",", "&lon=")
 
         var url = baseUrl + "app_id=" + app_id + "&app_key=" + app_key + "&lat=" + latLng + "&page=1" + "&rpp=" + $scope.stopsRange + "&callback=?"
-
-        { //        $http({
-            //            method: 'GET',
-            //            url: url
-            //        }).then(function successCallback(response) {
-            //            /* this callback will be called asynchronously
-            //             when the response is available*/
-            //            console.log(data)
-            //        }, function errorCallback(response) {
-            //            alert("Something went wrong, trying to fetch near bus stops")
-            //        });
-        } //for further consideration to exclude jQuery AJAX lib
 
         $.getJSON(url, function (data, status) {
 
@@ -133,7 +112,7 @@ angular.module('app.controllers', [])
         var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
         var url = baseUrl + busStop.atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
 
-        //console.log(url)
+        console.log(url)
 
         if (!(busStop.busesList)) {
             $.getJSON(url, function (data, status) {
@@ -170,12 +149,11 @@ angular.module('app.controllers', [])
     $scope.busRoute = function (bus, busStop) {
         var operator = bus.operator
         var line = bus.line
-        var dir = bus.dir
-        var atcocode = busStop.atcocode
         var app_id = "928e6aca"
         var app_key = "aa747294d32b6f68b6a827ed7f79242f"
-        var url = "https://transportapi.com/v3/uk/bus/route/" + operator + "/" + line + "/" + dir + "/" + atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
+        var url = "https://transportapi.com/v3/uk/bus/route/" + operator + "/" + line + "/" + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
 
+        console.log(url)
         $.getJSON(url, function (data, status) {
             //console.table(data.stops)
             var polyLineCoords = []
@@ -214,12 +192,15 @@ angular.module('app.controllers', [])
 
 
 
-.controller('journeyPlannerCtrl', function ($scope, $ionicTabsDelegate, initMap, geoServ) {
+.controller('journeyPlannerCtrl', function ($scope, $ionicTabsDelegate, $window, initMap, geoServ, mapResize) {
     var thisTab = $ionicTabsDelegate.selectedIndex()
     var thisDomElement = document.getElementById("map2")
     initMap.initIn(thisTab, thisDomElement)
     geoServ.setMapCenter(thisTab)
     var map = initMap.maps[thisTab]
+    $scope.$on('$ionicView.afterEnter', function () {
+        mapResize.thisMap(thisTab)
+    });
 })
 
 
@@ -229,10 +210,19 @@ angular.module('app.controllers', [])
 
 
 
-.controller('timetablesCtrl', function ($scope, $ionicTabsDelegate, initMap, geoServ) {
+.controller('timetablesCtrl', function ($scope, $ionicTabsDelegate, $window, initMap, geoServ, mapResize) {
     var thisTab = $ionicTabsDelegate.selectedIndex()
     var thisDomElement = document.getElementById("map3")
     initMap.initIn(thisTab, thisDomElement)
     geoServ.setMapCenter(thisTab)
     var map = initMap.maps[thisTab]
+    $scope.$on('$ionicView.afterEnter', function () {
+        mapResize.thisMap(thisTab)
+    });
 })
+
+
+
+//$state.go($state.current, {}, {
+//    reload: true
+//});
