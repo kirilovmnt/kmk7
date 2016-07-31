@@ -37,17 +37,28 @@
                 <!--tracker's lists of bus stops and buses-->
                 <ion-list id="tracker-list">
                     <div ng-repeat="busStop in busStopsList">
-                        <ion-item class="item-stable" ng-click="findBuses(busStop)" ng-class="{active: isBusesListShown(busStop.busesList)}">
+                        <ion-item class="item-stable" ng-click="findBuses(busStop, busStopsList)" ng-class="{active: isBusesListShown(busStop.busesList)}">
                             <i class="icon" ng-class="isBusesListShown(busStop.busesList) ? 'ion-minus' : 'ion-plus'"></i> &nbsp;
                             <strong>{{busStop.indicator}} {{busStop.name}} </strong>
                             <br><strong>{{busStop.distance}} m</strong> from searched location
                         </ion-item>
+
+                        <ion-item class="item-accordion" ng-show="isBusesListShown(busStop.busesList) && !(busStop.busesList.length)">
+                            <span class="item-text-wrap" ng-click=noInfoAlert()>
+                               &nbsp;&nbsp;<i class="icon ion-android-alert"></i> &nbsp;
+                               No information. Tap for details!
+                            </span>
+                        </ion-item>
                         <ion-item class="item-accordion" ng-repeat="bus in busStop.busesList" ng-click="busRoute(bus, busStop)" ng-show="isBusesListShown(busStop.busesList)">
 
                             <i class="icon ion-android-bus"></i> &nbsp; <strong>{{bus.line}}</strong> to {{bus.direction}}
-                            <br>&nbsp;&nbsp;<i class="icon ion-android-time"></i> &nbsp;
-                            <strong>{{bus.aimed_departure_time}}</strong> ({{bus.dir}})
+                            <br>&nbsp;&nbsp;<i class="icon ion-ios-paper-outline"></i> &nbsp;
+                            <strong>{{bus.aimed_departure_time}}</strong> (aimed {{(bus.dir)? bus.dir + " " : "departure "}}time)
 
+                            <span ng-show="bus.source == 'NextBuses'">
+                            <br>&nbsp;&nbsp;<i class="icon ion-android-time"></i> &nbsp;
+                            <strong>{{bus.best_departure_estimate}}</strong> (best departure estimate)
+                            </span>
                         </ion-item>
                     </div>
                 </ion-list>

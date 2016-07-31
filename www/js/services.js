@@ -146,23 +146,25 @@ angular.module('app.services', [])
     }
 }])
 
+//Transport API queries, handled by asynchronous services with promises
+.service('queryApi', ['$state', '$q', 'infoWindow', function ($state, $q, infoWindow) {
 
-.service('queryApi', ['$state', function ($state) {
-    queryApi = this
+    var queryApi = this
     var app_id = queryApi.app_id = "928e6aca"
     var app_key = queryApi.app_key = "aa747294d32b6f68b6a827ed7f79242f"
 
+    //API query for nearest bus stops
     queryApi.nearStops = function (coords, range, map) {
+        var deferred = $q.defer();
         var baseUrl = "https://transportapi.com/v3/uk/bus/stops/near.json?"
         var url = baseUrl + "app_id=" + app_id + "&app_key=" + app_key + "&lat=" + coords.lat + "&lon=" + coords.lng + "&page=1" + "&rpp=" + range + "&callback=?"
-
         if (typeof (queryApi.nearStops.stopsList) != "undefined") {
             var list = queryApi.nearStops.stopsList
             for (i = 0; i < list.length; i++) {
                 list[i].marker.setMap(null)
             }
         }
-        $.getJSON(url, function (data) {
+        $.getJSON(url, function (data) { //jQuery AJAX deals easier with CORS issues
             console.log(url)
             for (var i = 0; i < data.stops.length; i++) {
                 var busStop = data.stops[i]
@@ -175,34 +177,46 @@ angular.module('app.services', [])
                 })
             }
             queryApi.nearStops.stopsList = data.stops
-            $state.go($state.current, {}, {
-                reload: true
-            });
+            deferred.resolve(queryApi.nearStops.stopsList) //deferred promise value
         })
+        return deferred.promise
     }
 
-    queryApi.findBuses = function (busStop, map) {
-        var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
-        var url = baseUrl + busStop.atcocode + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
-        var stopsList = queryApi.nearStops.stopsList
+    //API query for particular bus stops's list of servicing buses
+    queryApi.findBuses = function (busStop, map, nextBuses) {
+        var deferred = $q.defer();
 
         if (typeof (busStop.busesList) == "undefined") {
-            $.getJSON(url, function (data, status) {
+            var useNextBuses = prompt("Do you want to use NextBuses API\nfor this query?\n(limited queries due to charges)\nType 'yes' if you do:")
+            if (useNextBuses == "yes" || useNextBuses == 'y') {
+                var useAPI = "yes"
+                var requestFor = "/live.json?"
+            } else {
+                var useAPI = "no"
+                var requestFor = "/timetable.json?" //the timetable request provides inbound/outbound information
+            }
+        }
+        var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
+        var url = baseUrl +
+            busStop.atcocode +
+            requestFor +
+            "app_id=" + app_id +
+            "&app_key=" + app_key +
+            "&nextbus=" + useAPI + "&callback=?"
+
+        if (typeof (busStop.busesList) == "undefined") {
+            $.getJSON(url, function (data, status) { //jQuery AJAX deals easier with CORS issues
                 console.log(url)
                 var busesList = []
                 Object.keys(data.departures).forEach(function (key, index) {
                     var bus = data.departures[key][0]
                     busesList.push(bus)
                 })
-                for (var i = 0; i < stopsList.length; i++) {
-                    if (busStop.atcocode != stopsList[i].atcocode) {} else {
-                        queryApi.findBuses.busesList = busesList
-                        stopsList[i].busesList = busesList
-                    }
-                }
-                queryApi.nearStops.stopsList = stopsList //triggers watcher in controller
+                infoWindow.showFor(map, busStop, true)
+                queryApi.findBuses.busesList = busesList
+                deferred.resolve(queryApi.findBuses.busesList) //deferred promise value
             })
         }
-        console.log("queryApi findBuses busesList")
+        return deferred.promise
     }
 }])

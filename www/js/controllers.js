@@ -15,7 +15,7 @@ angular.module('app.controllers', [])
     infoWindow
 ) {
 
-    trackCtrl = this
+    var trackCtrl = this
 
     var thisTab = $ionicTabsDelegate.selectedIndex()
     var thisDomElement = document.getElementById("map")
@@ -27,16 +27,6 @@ angular.module('app.controllers', [])
     });
 
 
-    /*
-          ^ ^ ^ ^ ^ ^ map init and geolocation handling ^ ^ ^ ^ ^ ^
-          _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-          v v v v v v     transport API and controls    v v v v v v
-    */
-
-
-    $scope.queryApi = queryApi
-
     //query Transport API for nearest bus stops
     $scope.nearStops = function () {
         var latLng = (document.getElementById("trackingSearch").value).split(",")
@@ -46,46 +36,52 @@ angular.module('app.controllers', [])
         }
         var range = $scope.stopsRange
         queryApi.nearStops(coords, range, map)
+            .then(function (busStopsList) {
+                $scope.busStopsList = busStopsList
+                map.setZoom(15)
+                map.setCenter($scope.searchCoords)
+                $location.hash("tracker-list")
+                $ionicScrollDelegate.anchorScroll(true)
+            })
     }
 
     //query Transport API for buses from selected bus stop
-    $scope.findBuses = function (busStop) {
-        console.log(this)
+    $scope.findBuses = function (busStop, map) {
         queryApi.findBuses(busStop, map)
-        var stopsList = $scope.queryApi.nearStops.stopsList
+            .then(function (busesList) {
+                console.log(busesList)
+                busStop.busesList = busesList
+                $scope.shownBusesList = busesList
+                $state.go($state.current, {}, {
+                    reload: true
+                });
+            });
+        infoWindow.showFor(map, busStop, true)
+        $scope.accordionInfoWindows(busStop)
+    }
 
-
+    //control for the accordion list and Google Maps infowindows for bus stops
+    $scope.accordionInfoWindows = function (busStop) {
         if ($scope.isBusesListShown(busStop.busesList)) {
             $scope.shownBusesList = null;
             infoWindow.showFor(map, busStop, false)
         } else {
             $scope.shownBusesList = busStop.busesList
             infoWindow.showFor(map, busStop, true)
-            $scope.$apply
-            for (var i = 0; i < stopsList.length; i++) { //handle infowindows when bus lists already loaded (outside the AJAX call)
-                if (busStop.atcocode != stopsList[i].atcocode) {
-                    infoWindow.showFor(map, stopsList[i], false)
+            for (var i = 0; i < $scope.busStopsList.length; i++) {
+                if (busStop.atcocode != $scope.busStopsList[i].atcocode) {
+                    infoWindow.showFor(map, $scope.busStopsList[i], false)
                 }
             }
         }
     }
-
-
     $scope.isBusesListShown = function (list) {
-        return $scope.shownBusesList === list;
-    }
-
-
-    $scope.$watch('queryApi.nearStops.stopsList', function (newVal, oldVal, scope) {
-        if (newVal) {
-            scope.busStopsList = newVal;
-            $scope.$apply
-            map.setZoom(15)
-            map.setCenter($scope.searchCoords)
-            $location.hash("tracker-list")
-            $ionicScrollDelegate.anchorScroll(true)
+        if ($scope.shownBusesList) {
+            return $scope.shownBusesList === list;
+        } else {
+            return false
         }
-    })
+    }
 
     //disable and enable dragging
     $scope.disableSideDrag = function () {
@@ -96,6 +92,7 @@ angular.module('app.controllers', [])
     }
 
     //range control
+    $scope.stopsRange = document.getElementById("stops-range").value
     $scope.rangeChange = function () {
         $scope.stopsRange = document.getElementById("stops-range").value
     }
@@ -103,16 +100,16 @@ angular.module('app.controllers', [])
     //toggle control
     $scope.toggleStreamLocation = function () {
         if (this.streamLocation) {
-            trackCtrl.busForTracking = prompt("Which bus are you on?")
+            $scope.busForTracking = prompt("Which bus are you on?")
 
-            if (!trackCtrl.busForTracking) {
+            if (!$scope.busForTracking) {
                 this.streamLocation = false
             } else {
                 geoServ.watchPosition(thisTab)
             }
         } else {
             navigator.geolocation.clearWatch(geoServ.watchID)
-            trackCtrl.busForTracking = null
+            $scope.busForTracking = null
         }
     }
 
@@ -125,9 +122,13 @@ angular.module('app.controllers', [])
         document.getElementById("trackingSearch").value = $scope.searchCoords.lat + ", " + $scope.searchCoords.lng
     })
 
-    //stops range
-    $scope.stopsRange = document.getElementById("stops-range").value
-
+    //details about missing information
+    $scope.noInfoAlert = function () {
+        alert("The reasons for missing information might be:\n" +
+            "1. No services today\n" +
+            "2. No services at this time\n" +
+            "3. Connection fail")
+    }
 
 
     $scope.busRoute = function (bus, busStop) {
