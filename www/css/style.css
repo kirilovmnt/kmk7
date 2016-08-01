@@ -30,3 +30,20 @@ body {
 .list .item.item-accordion.ng-hide-remove {
     display: block !important;
 }
+
+/**/
+
+
+/**/
+
+.input-dropdown {
+    position: absolute;
+    background: grey;
+    border: solid 1px #000;
+    z-index: 1001;
+    overflow: visible;
+}
+.input-dropdown-menu {
+    overflow: visible;
+    z-index: 1002;
+}

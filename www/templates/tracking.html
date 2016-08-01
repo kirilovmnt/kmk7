@@ -6,36 +6,58 @@
             <p class=" " style="color:#000000;font-size:16px;">
                 <strong>Find Next Departures from Bus Stops near:</strong>
             </p>
-
-            <label style="" class="item item-input">
+            <label style="" class="item item-input item-select">
                 <i class="icon ion-search placeholder-icon"></i>
-                <input id="trackingSearch" placeholder="Search for a bus stop" type="search">
+                <input data-ng-model="searchInput.value" id="trackingSearch" placeholder="Search for bus stops" type="search" ng-change="">
+
+                <select ng-model="searchMode.mode" id="selectSearchType" ng-change="searchModeChange(searchMode.mode)">
+                    <option value="nearby" ng-selected="true">Near you</option>
+                    <option value="mapTap">Map tap</option>
+                    <option value="address">Address</option>
+                    <option value="coords">Lat, Lng</option>
+                    <!--                    <option value="stopName">Stop name</option>-->
+                </select>
             </label>
+
+            <div class="input-dropdown suggestions col col-75" ng-show="showSuggestions && searchMode.mode == 'address'">
+                <ion-list class="input-dropdown-menu " ng-repeat="address in suggestions">
+                    <ion-item ng-click="selectSuggestion(address)">{{address.formatted_address}}</ion-item>
+                </ion-list>
+            </div>
+
             <div style="width: 283px; height: 10px;" class="spacer"></div>
 
             <p class=" " style="color:#000000;font-size:16px;">
                 <strong>Limit the count of bus stops to: {{stopsRange}}</strong>
             </p>
-            <div ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()">
+            <div>
                 <ion-item data-componentid="range2" class="range range-positive ">
-                    <input ng-model="range" id="stops-range" max="15" min="1" value="8" type="range" ng-change="rangeChange()">
+                    <input ng-model="range" id="stops-range" max="15" min="1" type="range" ng-change="rangeChange(range)">
                 </ion-item>
             </div>
             <div style="width: 283px; height: 10px;" class="spacer"></div>
 
-            <button class=" button button-positive  button-block icon ion-android-search " id="tracking-button1" ng-click="nearStops()">Find bus stops</button>
+            <button class=" button button-positive  button-block icon ion-android-search " id="tracking-button1" ng-click="searchMode.mode == 'address' ? geoCoder(searchInput.value) : nearStops(searchInput.value)">Find bus stops</button>
 
         </form>
 
-        <div class="list card">
+        <div class="list card" id="tracker-list">
             <div style="" class="item item-body ">
-                <p class=" " style="margin-top:0px;color:#000000;">
-                    <strong>List of the nearest stops</strong>
-                </p>
+
+                <div ng-click="showStopsList = !showStopsList" ng-show="busStopsList.length" class="item">
+
+                    <button class="button button-block button-stable icon-left ion-plus" ng-show="!showStopsList">
+                        <strong>Show Bus Stops List</strong>
+                    </button>
+
+                    <button class="active button button-block button-stable icon-left ion-minus" ng-show="showStopsList">
+                        <strong>Hide Bus Stops List</strong>
+                    </button>
+                </div>
 
 
                 <!--tracker's lists of bus stops and buses-->
-                <ion-list id="tracker-list">
+                <ion-list ng-show="showStopsList">
                     <div ng-repeat="busStop in busStopsList">
                         <ion-item class="item-stable" ng-click="findBuses(busStop, busStopsList)" ng-class="{active: isBusesListShown(busStop.busesList)}">
                             <i class="icon" ng-class="isBusesListShown(busStop.busesList) ? 'ion-minus' : 'ion-plus'"></i> &nbsp;
@@ -66,9 +88,13 @@
             </div>
             <div style="" class="item item-body ">
                 <div style="margin: 0px; background-color: #387ef5; text-align: center;position:relative; width:100%">
-                    <div id="map" class="map" ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()" style="width: 100%; height: 400px; position:relative"></div>
+                    <div id="map" class="map" style="width: 100%; height: 400px; position:relative">
+                        <!--
+                    </div><div id="map" class="map" ng-mouseover="disableSideDrag()" ng-mouseleave="enableSideDrag()" style="width: 100%; height: 400px; position:relative">
+</div>
+-->
+                    </div>
                 </div>
             </div>
-        </div>
     </ion-content>
 </ion-view>

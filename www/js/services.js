@@ -29,43 +29,55 @@ angular.module('app.services', [])
             icon: "img/pinpoint.gif",
             optimized: false
         })
+
     }
 }])
 
-.service('geoServ', ['initMap', function (initMap) {
+.service('geoServ', ['$ionicPopup', '$q', 'initMap', function ($ionicPopup, $q, initMap) {
     var geoServ = this
 
+
     //initial location
-    geoServ.setMapCenter = function (tabIndex) {
+    geoServ.initLocation = function (tabIndex) {
+        var deferred = $q.defer();
+        geoServ.initLocation.loading = true
         var map = initMap.maps[tabIndex]
         var marker = initMap.markers[tabIndex]
 
         //getCurrentPosition success callback
         var geoSetSuccess = function (position) {
-                geoServ.initialLocation = {
+                geoServ.initCoords = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 }
+                geoServ.initLocation.loading = false
                 geoServ.initMapSettings()
+                deferred.resolve(geoServ.initCoords)
             }
             //initial map settings
         geoServ.initMapSettings = function () {
-                map.setCenter(geoServ.initialLocation)
+                console.log(geoServ.initCoords)
+                map.setCenter(geoServ.initCoords)
                 map.setZoom(13);
-                marker.setPosition(geoServ.initialLocation)
+                marker.setPosition(geoServ.initCoords)
                 marker.setMap(map);
             }
             //reuse initial location or set it if undefined
-        if (typeof (geoServ.initialLocation) == "undefined") {
+        if (typeof (geoServ.initCoords) == "undefined") {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(geoSetSuccess, geoError, geoOptions)
             } else {
-                alert("Your device does not support geolocation")
+                $ionicPopup.alert({
+                    title: "Geolocation",
+                    template: "Your device does not support geolocation"
+                });
             }
         } else {
             geoServ.initMapSettings()
         }
+        return deferred.promise
     }
+
 
     //watch location
     geoServ.watchPosition = function (tabIndex) {
@@ -86,7 +98,10 @@ angular.module('app.services', [])
         if (navigator.geolocation) {
             this.watchID = navigator.geolocation.watchPosition(geoWatchSuccess, geoError, geoOptions)
         } else {
-            alert("Your device does not support geolocation")
+            $ionicPopup.alert({
+                title: "Geolocation",
+                template: "Your device does not support geolocation"
+            });
         }
     }
 
@@ -94,16 +109,23 @@ angular.module('app.services', [])
     var geoError = function (error) {
         switch (error.code) {
             case error.PERMISSION_DENIED:
-                alert("User denied the request for Geolocation.")
+
+                $ionicPopup.alert({
+                    title: "Geolocation error",
+                    template: "User denied the request for Geolocation."
+                });
                 break;
             case error.POSITION_UNAVAILABLE:
-                alert("Location information is unavailable.")
-                break;
-            case error.TIMEOUT:
-                alert("The request to get user location timed out.")
+                $ionicPopup.alert({
+                    title: "Geolocation error",
+                    template: "Location information is unavailable."
+                });
                 break;
             case error.UNKNOWN_ERROR:
-                alert("An unknown error occurred.")
+                $ionicPopup.alert({
+                    title: "Geolocation error",
+                    template: "An unknown error occurred."
+                });
                 break;
         }
     }
@@ -147,7 +169,7 @@ angular.module('app.services', [])
 }])
 
 //Transport API queries, handled by asynchronous services with promises
-.service('queryApi', ['$state', '$q', 'infoWindow', function ($state, $q, infoWindow) {
+.service('queryApi', ['$state', '$q', '$http', '$ionicPopup', 'infoWindow', function ($state, $q, $http, $ionicPopup, infoWindow) {
 
     var queryApi = this
     var app_id = queryApi.app_id = "928e6aca"
@@ -155,30 +177,38 @@ angular.module('app.services', [])
 
     //API query for nearest bus stops
     queryApi.nearStops = function (coords, range, map) {
+
         var deferred = $q.defer();
         var baseUrl = "https://transportapi.com/v3/uk/bus/stops/near.json?"
-        var url = baseUrl + "app_id=" + app_id + "&app_key=" + app_key + "&lat=" + coords.lat + "&lon=" + coords.lng + "&page=1" + "&rpp=" + range + "&callback=?"
+        var url = baseUrl +
+            "app_id=" + app_id +
+            "&app_key=" + app_key +
+            "&lat=" + coords.lat +
+            "&lon=" + coords.lng +
+            "&page=1" +
+            "&rpp=" + range + "&callback=JSON_CALLBACK"
         if (typeof (queryApi.nearStops.stopsList) != "undefined") {
             var list = queryApi.nearStops.stopsList
             for (i = 0; i < list.length; i++) {
                 list[i].marker.setMap(null)
             }
         }
-        $.getJSON(url, function (data) { //jQuery AJAX deals easier with CORS issues
-            console.log(url)
-            for (var i = 0; i < data.stops.length; i++) {
-                var busStop = data.stops[i]
-                busStop.marker = new google.maps.Marker({
-                    position: new google.maps.LatLng(busStop.latitude, busStop.longitude),
-                    map: map
-                })
-                busStop.infowindow = new google.maps.InfoWindow({
-                    content: busStop.indicator + " " + busStop.name
-                })
-            }
-            queryApi.nearStops.stopsList = data.stops
-            deferred.resolve(queryApi.nearStops.stopsList) //deferred promise value
-        })
+        $http.jsonp(url)
+            .success(function (data) {
+                console.log(url)
+                for (var i = 0; i < data.stops.length; i++) {
+                    var busStop = data.stops[i]
+                    busStop.marker = new google.maps.Marker({
+                        position: new google.maps.LatLng(busStop.latitude, busStop.longitude),
+                        map: map
+                    })
+                    busStop.infowindow = new google.maps.InfoWindow({
+                        content: busStop.indicator + " " + busStop.name
+                    })
+                }
+                queryApi.nearStops.stopsList = data.stops
+                deferred.resolve(queryApi.nearStops.stopsList) //deferred promise value
+            })
         return deferred.promise
     }
 
@@ -187,34 +217,48 @@ angular.module('app.services', [])
         var deferred = $q.defer();
 
         if (typeof (busStop.busesList) == "undefined") {
-            var useNextBuses = prompt("Do you want to use NextBuses API\nfor this query?\n(limited queries due to charges)\nType 'yes' if you do:")
-            if (useNextBuses == "yes" || useNextBuses == 'y') {
-                var useAPI = "yes"
-                var requestFor = "/live.json?"
-            } else {
-                var useAPI = "no"
-                var requestFor = "/timetable.json?" //the timetable request provides inbound/outbound information
-            }
-        }
-        var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
-        var url = baseUrl +
-            busStop.atcocode +
-            requestFor +
-            "app_id=" + app_id +
-            "&app_key=" + app_key +
-            "&nextbus=" + useAPI + "&callback=?"
 
-        if (typeof (busStop.busesList) == "undefined") {
-            $.getJSON(url, function (data, status) { //jQuery AJAX deals easier with CORS issues
+            var confirmPopup = $ionicPopup.confirm({
+                title: "Use NextBuses live data",
+                template: "Do you want to use live departures data from NextBuses for this query?<br>(limited queries due to charges)",
+                cancelText: "No",
+                okText: "Yes"
+            });
+            confirmPopup.then(function (res) {
+                if (res) {
+                    var useAPI = "yes"
+                    var requestFor = "/live.json?"
+                } else {
+                    var useAPI = "no"
+                    var requestFor = "/timetable.json?" //the timetable request provides inbound/outbound information
+                }
+                var baseUrl = "https://transportapi.com/v3/uk/bus/stop/"
+                var url = baseUrl +
+                    busStop.atcocode +
+                    requestFor +
+                    "app_id=" + app_id +
+                    "&app_key=" + app_key +
+                    "&nextbus=" + useAPI + "&callback=JSON_CALLBACK"
                 console.log(url)
+
                 var busesList = []
-                Object.keys(data.departures).forEach(function (key, index) {
-                    var bus = data.departures[key][0]
-                    busesList.push(bus)
-                })
-                infoWindow.showFor(map, busStop, true)
-                queryApi.findBuses.busesList = busesList
-                deferred.resolve(queryApi.findBuses.busesList) //deferred promise value
+                $http.jsonp(url)
+                    .success(function (data) {
+                        Object.keys(data.departures).forEach(function (key, index) {
+                            var bus = data.departures[key][0]
+                            busesList.push(bus)
+                        })
+                        busesListReady(busesList)
+                    })
+                    .error(function () {
+                        busesListReady(busesList)
+                    })
+
+                function busesListReady(list) {
+                    infoWindow.showFor(map, busStop, true)
+                    queryApi.findBuses.busesList = busesList
+                    deferred.resolve(queryApi.findBuses.busesList) //deferred promise value
+                }
             })
         }
         return deferred.promise
