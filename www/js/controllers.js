@@ -15,11 +15,12 @@ angular.module('app.controllers', [])
     geoServ,
     mapResize,
     queryApi,
-    infoWindow
+    infoWindow,
+    searchMode,
+    geoCoder,
+    noInfo
 ) {
-
     var trackCtrl = this
-
     var thisTab = $ionicTabsDelegate.selectedIndex()
     var thisDomElement = document.getElementById("map")
     initMap.initIn(thisTab, thisDomElement)
@@ -30,112 +31,58 @@ angular.module('app.controllers', [])
             document.getElementById("trackingSearch").value = initCoords.lat + ", " + initCoords.lng
         })
     var map = initMap.maps[thisTab]
-    $scope.$on('$ionicView.afterEnter', function () {
-        mapResize.thisMap(thisTab)
-    });
     $scope.searchInput = $scope.searchMode = {}
     $scope.searchMode.mode = "nearby"
-    $scope.showStopsList = true
+    $scope.$on('$ionicView.afterEnter', function () {
+        mapResize.thisMap(thisTab)
+        if (geoServ.initCoords && $scope.searchMode.mode == "nearby") {
+            document.getElementById("trackingSearch").value = geoServ.initCoords.lat + ", " + geoServ.initCoords.lng
+        }
 
+    });
+    $scope.noInfoAlert = function () {
+        noInfo.noBusesAlert()
+    }
+    $scope.showStopsList = true
+    $scope.stopsRange = document.getElementById("stops-range").value
+    $scope.rangeChange = function (value) {
+        $scope.stopsRange = value
+    }
     $scope.$watch('searchInput.value', function (newVal, oldVal) {
         if ($scope.searchMode.mode == "address" &&
             oldVal &&
-            !(oldVal.includes(newVal)) ||
-            !($scope.searchInput.value)
-        ) {
+            !(oldVal.includes(newVal))) {
             $scope.showSuggestions = false
             $scope.suggestions = []
         }
     })
-
-
     $scope.searchModeChange = function (mode) {
-        $scope.searchCoords = {}
-        document.getElementById("trackingSearch").value = null
-        google.maps.event.clearListeners(map, 'click')
-        if ($scope.tapMarker) {
-            $scope.tapMarker.setMap(null)
-        }
-        if (mode == "mapTap") {
-            $location.hash(map.getDiv().id)
-            $ionicScrollDelegate.anchorScroll(true)
-            google.maps.event.addListener(map, 'click', function (e) {
-                var tapCoords = {
-                    lat: e.latLng.lat(),
-                    lng: e.latLng.lng()
-                }
-                if (typeof ($scope.tapMarker) == "undefined") {
-                    $scope.tapMarker = new google.maps.Marker({
-                        position: tapCoords,
-                        map: map,
-                        icon: "img/blue-dot.png"
-                    });
-                }
-                document.getElementById("trackingSearch").value = tapCoords.lat + ", " + tapCoords.lng
-                $scope.tapMarker.setPosition(tapCoords)
-                $scope.tapMarker.setMap(map)
-            })
-
-        } else if (mode == "nearby") {
-            if (typeof ($scope.initCoords) == "undefined") {
-                if (!geoServ.initLocation.loading) {
-                    geoServ.initLocation(thisTab)
-                        .then(function (coords) {
-                            document.getElementById("trackingSearch").value = coords.lat + ", " + coords.lng
-                        })
-                }
-            } else {
-                document.getElementById("trackingSearch").value = $scope.initCoords.lat + ", " + $scope.initCoords.lng
-            }
-        } else if (mode == "address") {
-            if (typeof ($scope.address) != "undefined") {
-                if (!document.getElementById("trackingSearch").value) {
-                    $scope.inputSearch.value = $scope.address.formatted_address
-                }
-            }
-        }
-
+        searchMode.onchange(mode, document.getElementById("trackingSearch"), map)
     }
-
     $scope.selectSuggestion = function (address) {
-        $scope.address = address
-        console.log(address)
+        searchMode.address = address
+        searchMode.lastAddressSearch = $scope.searchInput.value
         $scope.searchInput.value = address.formatted_address
+        searchMode.lastFormattedAddress = address.formatted_address
         $scope.searchCoords = address.geometry.location
-        console.log($scope.searchCoords)
         $scope.showSuggestions = false
         $scope.nearStops()
     }
     $scope.geoCoder = function () {
-        if (typeof ($scope.address) != "undefined") {
-            $scope.selectSuggestion($scope.address)
-        } else {
-            var url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + document.getElementById("trackingSearch").value + "&key=AIzaSyDCufJBM-6w0uYLjXtSHQW7BawJEsB4i8o&callback=JSON_CALLBACK"
-            console.log(url)
-            $http.get(url)
-                .success(function (data) {
-                    console.log(data)
-                    if (data.status == "ZERO_RESULTS") {
-                        $ionicPopup.alert({
-                            title: "No results!",
-                            template: "The specified address/postcode was not found.<br>Try again or change the search method!"
-                        });
-                    } else {
-                        $scope.suggestions = data.results
-                        $scope.showSuggestions = true
-                        $state.go($state.current, {}, {
-                            reload: true
-                        });
-                    }
-                })
-        }
+        var searchInput = document.getElementById("trackingSearch").value
+        geoCoder.query(searchInput)
+            .then(function (suggestions) {
+                if (suggestions) {
+                    $scope.suggestions = suggestions
+                    $scope.showSuggestions = true
+                    $state.go($state.current, {}, {
+                        reload: true
+                    });
+                } else {
+                    $scope.selectSuggestion(searchMode.address)
+                }
+            })
     }
-
-
-
-
-
-    //query Transport API for nearest bus stops
     $scope.nearStops = function () {
         if ($scope.searchMode.mode != "address") {
             var latLng = document.getElementById("trackingSearch").value.split(",")
@@ -154,8 +101,6 @@ angular.module('app.controllers', [])
                 $ionicScrollDelegate.anchorScroll(true)
             })
     }
-
-    //query Transport API for buses from selected bus stop
     $scope.findBuses = function (busStop, map) {
         queryApi.findBuses(busStop, map)
             .then(function (busesList) {
@@ -168,8 +113,6 @@ angular.module('app.controllers', [])
         infoWindow.showFor(map, busStop, true)
         $scope.accordionInfoWindows(busStop)
     }
-
-    //control for the accordion list and Google Maps infowindows for bus stops
     $scope.accordionInfoWindows = function (busStop) {
         if ($scope.isBusesListShown(busStop.busesList)) {
             $scope.shownBusesList = null;
@@ -191,22 +134,6 @@ angular.module('app.controllers', [])
             return false
         }
     }
-
-    //    //disable and enable dragging
-    //    $scope.disableSideDrag = function () {
-    //        $ionicSideMenuDelegate.canDragContent(false)
-    //    }
-    //    $scope.enableSideDrag = function () {
-    //        $ionicSideMenuDelegate.canDragContent(true)
-    //    }
-
-    //range control
-    $scope.stopsRange = document.getElementById("stops-range").value
-    $scope.rangeChange = function (value) {
-        $scope.stopsRange = value
-    }
-
-    //toggle control
     $scope.toggleStreamLocation = function () {
         if (this.streamLocation) {
             $scope.busForTracking = prompt("Which bus are you on?")
@@ -220,20 +147,6 @@ angular.module('app.controllers', [])
             navigator.geolocation.clearWatch(geoServ.watchID)
             $scope.busForTracking = null
         }
-    }
-
-
-
-    //details about missing information
-    $scope.noInfoAlert = function () {
-        $ionicPopup.alert({
-            title: "No Information",
-            template: "The reasons for missing information might be:<br>" +
-                "&nbsp;&nbsp;1. No services today<br>" +
-                "&nbsp;&nbsp;2. No services at this time<br>" +
-                "&nbsp;&nbsp;3. This bus is labelled as 'deleted' in NaPTAN's database<br>" +
-                "&nbsp;&nbsp;4. Connection fail"
-        });
     }
 
 
@@ -304,6 +217,19 @@ angular.module('app.controllers', [])
     });
 })
 
+
+//    //disable and enable dragging
+//    $scope.disableSideDrag = function () {
+//        $ionicSideMenuDelegate.canDragContent(false)
+//    }
+//    $scope.enableSideDrag = function () {
+//        $ionicSideMenuDelegate.canDragContent(true)
+//    }
+
+//range control
+
+
+//toggle control
 
 
 //$state.go($state.current, {}, {

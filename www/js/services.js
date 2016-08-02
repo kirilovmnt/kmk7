@@ -56,7 +56,6 @@ angular.module('app.services', [])
             }
             //initial map settings
         geoServ.initMapSettings = function () {
-                console.log(geoServ.initCoords)
                 map.setCenter(geoServ.initCoords)
                 map.setZoom(13);
                 marker.setPosition(geoServ.initCoords)
@@ -260,6 +259,92 @@ angular.module('app.services', [])
                     deferred.resolve(queryApi.findBuses.busesList) //deferred promise value
                 }
             })
+        }
+        return deferred.promise
+    }
+}])
+
+//set the search mode
+.service('searchMode', ['$ionicScrollDelegate', '$location', 'geoServ', function ($ionicScrollDelegate, $location, geoServ) {
+    var searchMode = this
+    searchMode.onchange = function (mode, inputElement, map) {
+        searchMode.searchCoords = {}
+        inputElement.value = null
+        google.maps.event.clearListeners(map, 'click')
+        if (searchMode.tapMarker) {
+            searchMode.tapMarker.setMap(null)
+        }
+
+        if (mode == "mapTap") {
+            $location.hash(map.getDiv().id)
+            $ionicScrollDelegate.anchorScroll(true)
+            google.maps.event.addListener(map, 'click', function (e) {
+                var tapCoords = {
+                    lat: e.latLng.lat(),
+                    lng: e.latLng.lng()
+                }
+                if (typeof (searchMode.tapMarker) == "undefined") {
+                    searchMode.tapMarker = new google.maps.Marker({
+                        position: tapCoords,
+                        map: map,
+                        icon: "img/blue-dot.png"
+                    });
+                }
+                inputElement.value = tapCoords.lat + ", " + tapCoords.lng
+                searchMode.tapMarker.setPosition(tapCoords)
+                searchMode.tapMarker.setMap(map)
+            })
+        } else if (mode == "nearby") {
+            if (geoServ.initCoords) {
+                inputElement.value = geoServ.initCoords.lat + ", " + geoServ.initCoords.lng
+            }
+        } else if (mode == "address") {
+            if (typeof (searchMode.address) != "undefined") {
+                if (!inputElement.value) {
+                    inputElement.value = searchMode.address.formatted_address
+                }
+            }
+        }
+    }
+}])
+
+.service('noInfo', ['$ionicPopup', function ($ionicPopup) {
+    this.noBusesAlert = function () {
+        $ionicPopup.alert({
+            title: "No Information",
+            template: "The reasons for missing information might be:<br>" +
+                "&nbsp;&nbsp;1. No services today<br>" +
+                "&nbsp;&nbsp;2. No services at this time<br>" +
+                "&nbsp;&nbsp;3. This bus is labelled as 'deleted' in NaPTAN's database<br>" +
+                "&nbsp;&nbsp;4. Connection fail"
+        });
+    }
+}])
+
+.service('geoCoder', ['$q', '$http', 'searchMode', function ($q, $http, searchMode) {
+    var geoCoder = this
+    geoCoder.query = function (searchInput) {
+        var deferred = $q.defer()
+        if (typeof (searchMode.address) != "undefined" &&
+            (searchMode.lastAddressSearch.includes(searchInput) ||
+                searchMode.lastFormattedAddress.includes(searchInput))) {
+            deferred.resolve(false)
+        } else {
+            geoCoder.sameAddress = false
+            var url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + searchInput + "&key=AIzaSyDCufJBM-6w0uYLjXtSHQW7BawJEsB4i8o&callback=JSON_CALLBACK"
+            console.log(url)
+            $http.get(url)
+                .success(function (data) {
+                    console.log(data)
+                    if (data.status == "ZERO_RESULTS") {
+                        $ionicPopup.alert({
+                            title: "No results!",
+                            template: "The specified address/postcode was not found.<br>Try again or change the search method!"
+                        });
+                    } else {
+                        deferred.resolve(data.results)
+                    }
+                })
         }
         return deferred.promise
     }
