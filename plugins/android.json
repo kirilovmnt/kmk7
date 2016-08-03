@@ -22,10 +22,10 @@
         "cordova-plugin-statusbar": {
             "PACKAGE_NAME": "com.ionicframework.sidemenuandtabs734708"
         },
-        "ionic-plugin-keyboard": {
+        "cordova-plugin-whitelist": {
             "PACKAGE_NAME": "com.ionicframework.sidemenuandtabs734708"
         },
-        "cordova-plugin-whitelist": {
+        "ionic-plugin-keyboard": {
             "PACKAGE_NAME": "com.ionicframework.sidemenuandtabs734708"
         }
     },

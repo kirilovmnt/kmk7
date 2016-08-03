@@ -260,6 +260,8 @@ angular.module('app.controllers', [])
     $scope.$on('$ionicView.afterEnter', function () {
         mapResize.thisMap(thisTab)
     });
+
+
 })
 
 

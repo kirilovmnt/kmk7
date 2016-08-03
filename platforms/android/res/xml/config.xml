@@ -15,12 +15,12 @@
         <param name="android-package" value="org.apache.cordova.statusbar.StatusBar" />
         <param name="onload" value="true" />
     </feature>
-    <feature name="Keyboard">
-        <param name="android-package" value="io.ionic.keyboard.IonicKeyboard" />
-        <param name="onload" value="true" />
-    </feature>
     <feature name="Whitelist">
         <param name="android-package" value="org.apache.cordova.whitelist.WhitelistPlugin" />
+        <param name="onload" value="true" />
+    </feature>
+    <feature name="Keyboard">
+        <param name="android-package" value="io.ionic.keyboard.IonicKeyboard" />
         <param name="onload" value="true" />
     </feature>
     <icon density="ldpi" src="resources/android/icon/drawable-ldpi-icon.png" />
@@ -41,12 +41,12 @@
     <splash density="port-xhdpi" src="resources/android/splash/drawable-port-xhdpi-screen.png" />
     <splash density="port-xxhdpi" src="resources/android/splash/drawable-port-xxhdpi-screen.png" />
     <splash density="port-xxxhdpi" src="resources/android/splash/drawable-port-xxxhdpi-screen.png" />
-    <name>sideMenu and Tabs</name>
+    <name>Buses GPS Tracker</name>
     <description>
             An Ionic Framework and Cordova project.
         </description>
-    <author email="you@example.com" href="http://example.com.com/">
-            Your Name Here
+    <author email="kirilov.mnt@gmail.com" href="https://uk.linkedin.com/in/kirilovkiril">
+            Kiril Kirilov
         </author>
     <content src="index.html" />
     <access origin="*" />
