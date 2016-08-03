@@ -20,15 +20,15 @@ angular.module('app.routes', [])
         }
     })
 
-    .state('tabsController.timetables', {
-        url: '/page3',
-        views: {
-            'tab4': {
-                templateUrl: 'templates/timetables.html',
-                controller: 'timetablesCtrl'
-            }
-        }
-    })
+    //    .state('tabsController.timetables', {
+    //        url: '/page3',
+    //        views: {
+    //            'tab4': {
+    //                templateUrl: 'templates/timetables.html',
+    //                controller: 'timetablesCtrl'
+    //            }
+    //        }
+    //    })
 
     .state('tabsController.tracking', {
         url: '/page4',
@@ -46,7 +46,7 @@ angular.module('app.routes', [])
         abstract: true
     })
 
-    $urlRouterProvider.otherwise('/page1/page2')
+    $urlRouterProvider.otherwise('/page1/page4')
 
 
 

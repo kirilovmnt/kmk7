@@ -67,10 +67,8 @@ angular.module('app.services', [])
 }])
 
 
-
 .service('geoServ', ['$rootScope', '$ionicPopup', '$q', 'initMap', 'timestamp', function ($rootScope, $ionicPopup, $q, initMap, timestamp) {
     var geoServ = this
-
 
     //initial location
     geoServ.initLocation = function (tabIndex) {
@@ -84,20 +82,21 @@ angular.module('app.services', [])
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 }
+                marker.setPosition(geoServ.initCoords)
+
                 initMap.initCenter = geoServ.initCoords
                 geoServ.initLocation.loading = false
-                geoServ.initMapSettings()
+                if (!geoServ.initCenter) {
+                    geoServ.initMapSettings()
+                }
                 deferred.resolve(geoServ.initCoords)
             }
             //initial map settings
         geoServ.initMapSettings = function () {
-                if (!geoServ.initCenter) {
-                    map.setCenter(geoServ.initCoords)
-                    geoServ.initCenter = true
-                }
+                map.setCenter(geoServ.initCoords)
                 map.setZoom(13);
-                marker.setPosition(geoServ.initCoords)
                 marker.setMap(map);
+                geoServ.initCenter = true
             }
             //reuse initial location or set it if undefined
         if (!(geoServ.initCoords)) {

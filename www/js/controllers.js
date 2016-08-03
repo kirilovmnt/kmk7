@@ -142,7 +142,7 @@ angular.module('app.controllers', [])
                 $scope.busForTracking = {}
                 $scope.busForTracking.line = prompt("Which bus are you on?")
                 $scope.busForTracking.trace = []
-                if (!$scope.busForTracking.line.replace((/[^0-9]/g), "")) {
+                if (!$scope.busForTracking.line) {
                     this.streamLocation = false
                 } else {
                     geoServ.watchPosition(map)
@@ -156,7 +156,6 @@ angular.module('app.controllers', [])
                         lng: marker.getPosition().lng()
                     }
                     for (i = 0; i < initMap.markers.length; i++) {
-                        initMap.markers[i].setPosition(currentCoords)
                         marker.setMap(null)
                     }
                 }
@@ -183,18 +182,12 @@ angular.module('app.controllers', [])
 
     $scope.busRoute = function (bus, busStop) {
 
-        if ($scope.busForTracking) {
-            var trace = $scope.busForTracking.trace
-            for (i = 0; i < trace.length; i++) {
-                trace[i].marker.setMap(null)
-            }
-        }
+        $location.hash(map.getDiv().id)
+        $ionicScrollDelegate.anchorScroll(true)
+
         if ($scope.wholeRoute) {
             $scope.wholeRoute.setMap(null)
         }
-
-        var traceLineNumber = $scope.busForTracking.line.replace((/[^0-9]/g), "")
-        var busLineNumber = bus.line.replace((/[^0-9]/g), "")
 
         var operator = bus.operator
         var line = bus.line
@@ -222,8 +215,17 @@ angular.module('app.controllers', [])
                     map: map
                 })
             })
+            .error(function () {
+                alert("Error retrieving the whole route for selected bus")
+            })
         if ($scope.busForTracking) {
+
             var trace = $scope.busForTracking.trace
+            for (i = 0; i < trace.length; i++) {
+                trace[i].marker.setMap(null)
+            }
+            var traceLineNumber = $scope.busForTracking.line.replace((/[^0-9]/g), "")
+            var busLineNumber = bus.line.replace((/[^0-9]/g), "")
             if (traceLineNumber == busLineNumber) {
                 $ionicPopup.alert({
                     title: "Live GPS Trace",
