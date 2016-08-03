@@ -13,6 +13,36 @@ angular.module('app.services', [])
         minZoom: 5
     }
 
+    //custom controls by Google Maps: https://goo.gl/sl88KX
+    function CenterControl(controlDiv, map) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.marginBottom = '22px';
+        controlUI.style.textAlign = 'center';
+        controlUI.title = 'Click to recenter the map';
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior.
+        var controlText = document.createElement('div');
+        controlText.style.color = 'rgb(25,25,25)';
+        controlText.style.fontSize = '16px';
+        controlText.style.lineHeight = '38px';
+        controlText.style.paddingLeft = '5px';
+        controlText.style.paddingRight = '5px';
+        controlText.innerHTML = 'Center Map';
+        controlUI.appendChild(controlText);
+
+        // Setup the click event listeners: simply set the map to Chicago.
+        controlUI.addEventListener('click', function () {
+            map.setCenter(initMap.initCenter)
+        });
+    }
+
     initMap.initIn = function (tabIndex, element) {
         if (typeof (initMap.maps) == "undefined") {
             initMap.maps = []
@@ -28,7 +58,11 @@ angular.module('app.services', [])
             title: "Your initial location",
             icon: "img/blue-dot.png"
         })
+        var centerControlDiv = document.createElement('div');
+        var centerControl = new CenterControl(centerControlDiv, initMap.maps[tabIndex]);
 
+        centerControlDiv.index = 1;
+        initMap.maps[tabIndex].controls[google.maps.ControlPosition.TOP_RIGHT].push(centerControlDiv);
     }
 }])
 
@@ -44,22 +78,22 @@ angular.module('app.services', [])
         geoServ.initLocation.loading = true
         var map = initMap.maps[tabIndex]
         var marker = initMap.markers[tabIndex]
-        geoServ.initialCenter = true
             //getCurrentPosition success callback
         var geoSetSuccess = function (position) {
                 geoServ.initCoords = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 }
+                initMap.initCenter = geoServ.initCoords
                 geoServ.initLocation.loading = false
                 geoServ.initMapSettings()
                 deferred.resolve(geoServ.initCoords)
             }
             //initial map settings
         geoServ.initMapSettings = function () {
-                if (geoServ.initialCenter) {
+                if (!geoServ.initCenter) {
                     map.setCenter(geoServ.initCoords)
-                    geoServ.initialCenter = !geoServ.initialCenter
+                    geoServ.initCenter = true
                 }
                 map.setZoom(13);
                 marker.setPosition(geoServ.initCoords)
