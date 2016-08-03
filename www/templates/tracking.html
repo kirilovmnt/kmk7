@@ -45,6 +45,8 @@
             <div style="" class="item item-body ">
 
                 <div ng-click="showStopsList = !showStopsList" ng-show="busStopsList.length" class="item">
+                    <!--  <ion-spinner icon="spiral"></ion-spinner>-->
+
 
                     <button class="button button-block button-stable icon-left ion-plus" ng-show="!showStopsList">
                         <strong>Show Bus Stops List</strong>
@@ -72,7 +74,6 @@
                             </span>
                         </ion-item>
                         <ion-item class="item-accordion" ng-repeat="bus in busStop.busesList" ng-click="busRoute(bus, busStop)" ng-show="isBusesListShown(busStop.busesList)">
-
                             <i class="icon ion-android-bus"></i> &nbsp; <strong>{{bus.line}}</strong> to {{bus.direction}}
                             <br>&nbsp;&nbsp;<i class="icon ion-ios-paper-outline"></i> &nbsp;
                             <strong>{{bus.aimed_departure_time}}</strong> (aimed {{(bus.dir)? bus.dir + " " : "departure "}}time)
@@ -81,6 +82,9 @@
                             <br>&nbsp;&nbsp;<i class="icon ion-android-time"></i> &nbsp;
                             <strong>{{bus.best_departure_estimate}}</strong> (best departure estimate)
                             </span>
+                            <div class="item-icon-right" ng-show="bus.trace">
+                                <i class="icon ion-android-locate"></i>
+                            </div>
                         </ion-item>
                     </div>
                 </ion-list>

@@ -25,15 +25,16 @@ angular.module('app.services', [])
         }
         initMap.maps[tabIndex] = new google.maps.Map(element, mapOptions);
         initMap.markers[tabIndex] = new google.maps.Marker({
-            title: "Your location",
-            icon: "img/pinpoint.gif",
-            optimized: false
+            title: "Your initial location",
+            icon: "img/blue-dot.png"
         })
 
     }
 }])
 
-.service('geoServ', ['$ionicPopup', '$q', 'initMap', function ($ionicPopup, $q, initMap) {
+
+
+.service('geoServ', ['$rootScope', '$ionicPopup', '$q', 'initMap', 'timestamp', function ($rootScope, $ionicPopup, $q, initMap, timestamp) {
     var geoServ = this
 
 
@@ -43,8 +44,8 @@ angular.module('app.services', [])
         geoServ.initLocation.loading = true
         var map = initMap.maps[tabIndex]
         var marker = initMap.markers[tabIndex]
-
-        //getCurrentPosition success callback
+        geoServ.initialCenter = true
+            //getCurrentPosition success callback
         var geoSetSuccess = function (position) {
                 geoServ.initCoords = {
                     lat: position.coords.latitude,
@@ -56,15 +57,18 @@ angular.module('app.services', [])
             }
             //initial map settings
         geoServ.initMapSettings = function () {
-                map.setCenter(geoServ.initCoords)
+                if (geoServ.initialCenter) {
+                    map.setCenter(geoServ.initCoords)
+                    geoServ.initialCenter = !geoServ.initialCenter
+                }
                 map.setZoom(13);
                 marker.setPosition(geoServ.initCoords)
                 marker.setMap(map);
             }
             //reuse initial location or set it if undefined
-        if (typeof (geoServ.initCoords) == "undefined") {
+        if (!(geoServ.initCoords)) {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(geoSetSuccess, geoError, geoOptions)
+                navigator.geolocation.watchPosition(geoSetSuccess, geoError, geoOptions)
             } else {
                 $ionicPopup.alert({
                     title: "Geolocation",
@@ -77,31 +81,52 @@ angular.module('app.services', [])
         return deferred.promise
     }
 
-
     //watch location
-    geoServ.watchPosition = function (tabIndex) {
-        var marker = initMap.markers[tabIndex]
+    geoServ.watchPosition = function (map) {
 
-        var geoWatchSuccess = function (position) {
-
-            //set marker to current position
-            marker.setPosition({
+        function geoWatchSuccess(position) {
+            if (!geoServ.liveMarker) {
+                geoServ.liveMarker = new google.maps.Marker({
+                    icon: "img/pinpoint.gif",
+                    optimized: false,
+                    map: map
+                })
+            } else {
+                geoServ.liveMarker.setMap(map)
+            }
+            geoServ.liveMarker.setPosition({
                 lat: position.coords.latitude,
                 lng: position.coords.longitude
             })
+            var traceMark = {
+                coords: {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                },
+                timestamp: position.timestamp,
+                heading: position.coords.heading,
+                speed: position.coords.speed
+            }
 
-            //for debugging purposes
-            console.log(position.timestamp)
-            document.getElementById("trackingSearch").value = position.timestamp
+            var marker = new google.maps.Marker({
+                icon: "img/red-dot.png",
+                position: traceMark.coords,
+            })
+            var infowindow = new google.maps.InfoWindow();
+            var content = timestamp.msec(traceMark.timestamp)
+
+            google.maps.event.addListener(marker, 'click', (function (marker, content, infowindow) {
+                return function () {
+                    infowindow.setContent(content);
+                    infowindow.open(map, marker);
+                };
+            })(marker, content, infowindow));
+            traceMark.marker = marker
+            traceMark.infowindow = infowindow
+            $rootScope.$broadcast('traceMark:updated', traceMark)
         }
-        if (navigator.geolocation) {
-            this.watchID = navigator.geolocation.watchPosition(geoWatchSuccess, geoError, geoOptions)
-        } else {
-            $ionicPopup.alert({
-                title: "Geolocation",
-                template: "Your device does not support geolocation"
-            });
-        }
+        //this is where another live GPS source can be plugged in instead of local position watcher
+        this.watchID = navigator.geolocation.watchPosition(geoWatchSuccess, geoError, geoOptions)
     }
 
     //error callback for unsuccessfull geolocation requests
@@ -201,9 +226,18 @@ angular.module('app.services', [])
                         position: new google.maps.LatLng(busStop.latitude, busStop.longitude),
                         map: map
                     })
+                    var content = busStop.indicator + " " + busStop.name
+
                     busStop.infowindow = new google.maps.InfoWindow({
-                        content: busStop.indicator + " " + busStop.name
+                        content: content
                     })
+                    var marker = busStop.marker
+                    var infowindow = busStop.infowindow
+                    google.maps.event.addListener(marker, 'click', (function (marker, content, infowindow) {
+                        return function () {
+                            infowindow.open(map, marker);
+                        };
+                    })(marker, content, infowindow));
                 }
                 queryApi.nearStops.stopsList = data.stops
                 deferred.resolve(queryApi.nearStops.stopsList) //deferred promise value
@@ -305,6 +339,22 @@ angular.module('app.services', [])
                 }
             }
         }
+    }
+}])
+
+.service('timestamp', [function () {
+    this.msec = function timeStamp(ms) {
+        if (isNaN(ms)) {
+            ms = Date.now()
+        }
+        var dateString = new Date(ms).toLocaleString()
+        var b = dateString.split(" ")
+        for (i = 0; i < b.length; i++) {
+            if (isNaN(b[i][0])) {
+                b.splice(i, 1)
+            }
+        }
+        return (b.toString()).replace(/,/g, " ")
     }
 }])
 

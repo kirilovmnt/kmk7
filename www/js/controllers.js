@@ -18,7 +18,8 @@ angular.module('app.controllers', [])
     infoWindow,
     searchMode,
     geoCoder,
-    noInfo
+    noInfo,
+    timestamp
 ) {
     var trackCtrl = this
     var thisTab = $ionicTabsDelegate.selectedIndex()
@@ -68,6 +69,20 @@ angular.module('app.controllers', [])
         $scope.showSuggestions = false
         $scope.nearStops()
     }
+    $scope.accordionInfoWindows = function (busStop) {
+        if ($scope.isBusesListShown(busStop.busesList)) {
+            $scope.shownBusesList = null;
+            infoWindow.showFor(map, busStop, false)
+        } else {
+            $scope.shownBusesList = busStop.busesList
+            infoWindow.showFor(map, busStop, true)
+            for (var i = 0; i < $scope.busStopsList.length; i++) {
+                if (busStop.atcocode != $scope.busStopsList[i].atcocode) {
+                    infoWindow.showFor(map, $scope.busStopsList[i], false)
+                }
+            }
+        }
+    }
     $scope.geoCoder = function () {
         var searchInput = document.getElementById("trackingSearch").value
         geoCoder.query(searchInput)
@@ -82,6 +97,13 @@ angular.module('app.controllers', [])
                     $scope.selectSuggestion(searchMode.address)
                 }
             })
+    }
+    $scope.isBusesListShown = function (list) {
+        if ($scope.shownBusesList) {
+            return $scope.shownBusesList === list;
+        } else {
+            return false
+        }
     }
     $scope.nearStops = function () {
         if ($scope.searchMode.mode != "address") {
@@ -102,85 +124,124 @@ angular.module('app.controllers', [])
             })
     }
     $scope.findBuses = function (busStop, map) {
-        queryApi.findBuses(busStop, map)
-            .then(function (busesList) {
-                busStop.busesList = busesList
-                $scope.shownBusesList = busesList
-                $state.go($state.current, {}, {
-                    reload: true
-                });
-            })
-        infoWindow.showFor(map, busStop, true)
-        $scope.accordionInfoWindows(busStop)
-    }
-    $scope.accordionInfoWindows = function (busStop) {
-        if ($scope.isBusesListShown(busStop.busesList)) {
-            $scope.shownBusesList = null;
-            infoWindow.showFor(map, busStop, false)
-        } else {
-            $scope.shownBusesList = busStop.busesList
+            queryApi.findBuses(busStop, map)
+                .then(function (busesList) {
+                    assignActiveTrace(busesList)
+                    busStop.busesList = busesList
+                    $scope.shownBusesList = busesList
+                    $state.go($state.current, {}, {
+                        reload: true
+                    });
+                })
             infoWindow.showFor(map, busStop, true)
-            for (var i = 0; i < $scope.busStopsList.length; i++) {
-                if (busStop.atcocode != $scope.busStopsList[i].atcocode) {
-                    infoWindow.showFor(map, $scope.busStopsList[i], false)
+            $scope.accordionInfoWindows(busStop)
+        }
+        //toggle the location watcher to emulate live GPS feed from a bus
+    $scope.toggleStreamLocation = function () {
+            if (this.streamLocation) {
+                $scope.busForTracking = {}
+                $scope.busForTracking.line = prompt("Which bus are you on?")
+                $scope.busForTracking.trace = []
+                if (!$scope.busForTracking.line.replace((/[^0-9]/g), "")) {
+                    this.streamLocation = false
+                } else {
+                    geoServ.watchPosition(map)
+                }
+            } else {
+                navigator.geolocation.clearWatch(geoServ.watchID)
+                if (geoServ.liveMarker) {
+                    var marker = geoServ.liveMarker
+                    var currentCoords = {
+                        lat: marker.getPosition().lat(),
+                        lng: marker.getPosition().lng()
+                    }
+                    for (i = 0; i < initMap.markers.length; i++) {
+                        initMap.markers[i].setPosition(currentCoords)
+                        marker.setMap(null)
+                    }
+                }
+            }
+        }
+        //assign the active GPS trace (if any) to corresponding buses in the list
+    function assignActiveTrace(busesList) {
+        if ($scope.busForTracking) {
+            var traceLineNumber = $scope.busForTracking.line.replace((/[^0-9]/g), "")
+            for (i = 0; i < busesList.length; i++) {
+                var busLineNumber = busesList[i].line.replace((/[^0-9]/g), "")
+                if (traceLineNumber == busLineNumber) {
+                    busesList[i].trace = true
+                } else {
+                    busesList[i].trace = false
                 }
             }
         }
     }
-    $scope.isBusesListShown = function (list) {
-        if ($scope.shownBusesList) {
-            return $scope.shownBusesList === list;
-        } else {
-            return false
-        }
-    }
-    $scope.toggleStreamLocation = function () {
-        if (this.streamLocation) {
-            $scope.busForTracking = prompt("Which bus are you on?")
-
-            if (!$scope.busForTracking) {
-                this.streamLocation = false
-            } else {
-                geoServ.watchPosition(thisTab)
-            }
-        } else {
-            navigator.geolocation.clearWatch(geoServ.watchID)
-            $scope.busForTracking = null
-        }
-    }
+    $scope.$on('traceMark:updated', function (event, data) {
+        $scope.busForTracking.trace.push(data)
+    })
 
 
     $scope.busRoute = function (bus, busStop) {
+
+        if ($scope.busForTracking) {
+            var trace = $scope.busForTracking.trace
+            for (i = 0; i < trace.length; i++) {
+                trace[i].marker.setMap(null)
+            }
+        }
+        if ($scope.wholeRoute) {
+            $scope.wholeRoute.setMap(null)
+        }
+
+        var traceLineNumber = $scope.busForTracking.line.replace((/[^0-9]/g), "")
+        var busLineNumber = bus.line.replace((/[^0-9]/g), "")
+
         var operator = bus.operator
         var line = bus.line
         var app_id = "928e6aca"
         var app_key = "aa747294d32b6f68b6a827ed7f79242f"
-        var url = "https://transportapi.com/v3/uk/bus/route/" + operator + "/" + line + "/" + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=?"
+        var url = "https://transportapi.com/v3/uk/bus/route/" + operator + "/" + line + "/" + "/timetable.json?" + "app_id=" + app_id + "&app_key=" + app_key + "&callback=JSON_CALLBACK"
 
         console.log(url)
-        $.getJSON(url, function (data, status) {
-            //console.table(data.stops)
-            var routeCoords = []
-            for (i = 0; i < data.stops.length; i++) {
-                routeCoords.push({
-                    lat: data.stops[i].latitude,
-                    lng: data.stops[i].longitude
+
+        $http.jsonp(url)
+            .success(function (data) {
+                var stopsCoords = []
+                for (i = 0; i < data.stops.length; i++) {
+                    stopsCoords.push({
+                        lat: data.stops[i].latitude,
+                        lng: data.stops[i].longitude
+                    })
+                }
+                $scope.wholeRoute = new google.maps.Polyline({
+                    path: stopsCoords,
+                    geodesic: false,
+                    strokeColor: "#0000ff",
+                    strokeOpacity: 0.7,
+                    strokeWeight: 4,
+                    map: map
+                })
+            })
+        if ($scope.busForTracking) {
+            var trace = $scope.busForTracking.trace
+            if (traceLineNumber == busLineNumber) {
+                $ionicPopup.alert({
+                    title: "Live GPS Trace",
+                    template: "There is available live GPS trace for line " + $scope.busForTracking.line
+                });
+                for (i = 0; i < trace.length; i++) {
+                    trace[i].marker.setMap(map)
+                }
+                $scope.$on('traceMark:updated', function (event, data) {
+                    data.marker.setMap(map)
+                })
+            } else {
+                $scope.$on('traceMark:updated', function (event, data) {
+                    data.marker.setMap(null)
                 })
             }
-            $scope.routePolyLine = new google.maps.Polyline({
-                path: routeCoords,
-                geodesic: false,
-                strokeColor: "#FF0000",
-                strokeOpacity: 0.9,
-                strokeWeight: 4
-            })
-            $scope.routePolyLine.setMap(map)
-        })
-
+        }
     }
-
-
-
 })
 
 
@@ -198,11 +259,6 @@ angular.module('app.controllers', [])
         mapResize.thisMap(thisTab)
     });
 })
-
-
-
-
-
 
 
 
@@ -226,12 +282,14 @@ angular.module('app.controllers', [])
 //        $ionicSideMenuDelegate.canDragContent(true)
 //    }
 
-//range control
-
-
-//toggle control
 
 
 //$state.go($state.current, {}, {
 //    reload: true
 //});
+
+
+
+
+//-remove polyline syntax
+//-toggle function not responding on invalid input
