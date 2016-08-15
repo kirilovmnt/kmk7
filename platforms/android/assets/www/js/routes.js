@@ -8,30 +8,16 @@ angular.module('app.routes', [])
     // Each state's controller can be found in controllers.js
     $stateProvider
 
-
-
-        .state('tabsController.journeyPlanner', {
-        url: '/page2',
-        views: {
-            'tab1': {
-                templateUrl: 'templates/journeyPlanner.html',
-                controller: 'journeyPlannerCtrl'
-            }
-        }
+    //load the tabs wrapper
+        .state('tabsController', {
+        url: '/tabsNav',
+        templateUrl: 'templates/tabsController.html',
+        abstract: true
     })
 
-    //    .state('tabsController.timetables', {
-    //        url: '/page3',
-    //        views: {
-    //            'tab4': {
-    //                templateUrl: 'templates/timetables.html',
-    //                controller: 'timetablesCtrl'
-    //            }
-    //        }
-    //    })
-
+    //load the tracking tab
     .state('tabsController.tracking', {
-        url: '/page4',
+        url: '/trackerPage',
         views: {
             'tab3': {
                 templateUrl: 'templates/tracking.html',
@@ -40,14 +26,17 @@ angular.module('app.routes', [])
         }
     })
 
-    .state('tabsController', {
-        url: '/page1',
-        templateUrl: 'templates/tabsController.html',
-        abstract: true
+    //load the journey planner
+    .state('tabsController.journeyPlanner', {
+        url: '/journeyPage',
+        views: {
+            'tab1': {
+                templateUrl: 'templates/journeyPlanner.html',
+                controller: 'journeyPlannerCtrl'
+            }
+        }
     })
 
-    $urlRouterProvider.otherwise('/page1/page4')
-
-
+    $urlRouterProvider.otherwise('/tabsNav/trackerPage')
 
 });

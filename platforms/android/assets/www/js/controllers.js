@@ -1,5 +1,16 @@
 angular.module('app.controllers', [])
 
+.controller('journeyPlannerCtrl', function ($scope, $ionicTabsDelegate, $window, initMap, geoServ, mapResize) {
+    var thisTab = $ionicTabsDelegate.selectedIndex()
+    var thisDomElement = document.getElementById("map2")
+    initMap.initIn(thisTab, thisDomElement)
+    geoServ.initLocation(thisTab)
+    var map = initMap.maps[thisTab]
+    $scope.$on('$ionicView.afterEnter', function () {
+        mapResize.thisMap(thisTab)
+    });
+})
+
 .controller('trackingCtrl', function (
     $scope,
     $state,
@@ -248,36 +259,6 @@ angular.module('app.controllers', [])
 
 
 
-
-
-
-.controller('journeyPlannerCtrl', function ($scope, $ionicTabsDelegate, $window, initMap, geoServ, mapResize) {
-    var thisTab = $ionicTabsDelegate.selectedIndex()
-    var thisDomElement = document.getElementById("map2")
-    initMap.initIn(thisTab, thisDomElement)
-    geoServ.initLocation(thisTab)
-    var map = initMap.maps[thisTab]
-    $scope.$on('$ionicView.afterEnter', function () {
-        mapResize.thisMap(thisTab)
-    });
-
-
-})
-
-
-
-.controller('timetablesCtrl', function ($scope, $ionicTabsDelegate, $window, initMap, geoServ, mapResize) {
-    var thisTab = $ionicTabsDelegate.selectedIndex()
-    var thisDomElement = document.getElementById("map3")
-    initMap.initIn(thisTab, thisDomElement)
-    geoServ.initLocation(thisTab)
-    var map = initMap.maps[thisTab]
-    $scope.$on('$ionicView.afterEnter', function () {
-        mapResize.thisMap(thisTab)
-    });
-})
-
-
 //    //disable and enable dragging
 //    $scope.disableSideDrag = function () {
 //        $ionicSideMenuDelegate.canDragContent(false)
@@ -285,15 +266,3 @@ angular.module('app.controllers', [])
 //    $scope.enableSideDrag = function () {
 //        $ionicSideMenuDelegate.canDragContent(true)
 //    }
-
-
-
-//$state.go($state.current, {}, {
-//    reload: true
-//});
-
-
-
-
-//-remove polyline syntax
-//-toggle function not responding on invalid input

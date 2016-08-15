@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 
+<!--the header is used for loading all external resources before the main content-->
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
@@ -10,17 +12,11 @@
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDCufJBM-6w0uYLjXtSHQW7BawJEsB4i8o"></script>
     <script src="lib/ionic/js/ionic.bundle.js"></script>
-    <script src="lib/cutom_jquery1.11.1-ajax_only.js"></script>
-
-
-    <!-- cordova script (this will be a 404 during development) -->
     <script src="cordova.js"></script>
 
     <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above
     <link href="css/ionic.app.css" rel="stylesheet">
     -->
-
-
     <link href="lib/ionic/css/ionic.css" rel="stylesheet">
 
 
@@ -60,7 +56,6 @@
     <script src="js/directives.js"></script>
 
 
-
     <!-- Only required for Tab projects w/ pages in multiple tabs 
     <script src="lib/ionicuirouter/ionicUIRouter.js"></script>
     -->
@@ -75,33 +70,28 @@
                     <ion-nav-bar class="bar-stable">
                         <ion-nav-back-button></ion-nav-back-button>
                         <ion-nav-buttons side="left">
-                            <button class="button button-icon button-clear ion-navicon" menu-toggle="left"></button>
+                            <button class="button button-icon button-clear ion-ios-information-outline" menu-toggle="left"></button>
                         </ion-nav-buttons>
                     </ion-nav-bar>
                     <ion-nav-view></ion-nav-view>
                 </ion-side-menu-content>
                 <ion-side-menu style="background-color:#DAE2FE;" side="left" id="side-menu21" drag-content="false">
                     <ion-header-bar class="bar-stable">
-                        <div class="title">Menu</div>
+                        <div class="title">About</div>
                     </ion-header-bar>
                     <ion-content padding="false" class="side-menu-left has-header">
-                        <ion-list data-componentid="list3" class=" " id="menu-list3">
-                            <ion-toggle data-componentid="toggle6" class=" " id="menu-toggle6" toggle-class="toggle-positive">Toggle</ion-toggle>
-                            <ion-item data-componentid="list-item12" style="" class="  " id="menu-list-item12">Item 1</ion-item>
-                            <ion-item data-componentid="list-item13" style="" class="  " id="menu-list-item13">Item 2</ion-item>
-                            <label data-componentid="select2" id="menu-select2" class="item item-select ">
-                                <input id="trackingSearch" class="initGeoSearch" placeholder="Search for a bus stop" type="search">
-
-                                <select>
-                                    <option>Blue</option>
-                                    <option>Green</option>
-                                    <option>Red</option>
-                                    <option>Dark</option>
-                                    <option>Light</option>
-                                </select>
-                            </label>
-
-                        </ion-list>
+                        <div class="university-logo" style="text-align:center">
+                            <h3>GPS Bus Tracker</h3>
+                            <img src="img/st-andrews-logo.png" alt="" style="width:30%">
+                        </div>
+                        <div class="item item-text-wrap">
+                            <p class="">
+                                This project is developed to showcase the benefits of integrating live GPS data in the freely available information, provided to passengers. The unavailable live GPS feed from the bus companies is simulated by collecting data about the device's geolocation while on a bus and using it as a data source for the trace of the bus.
+                                <br>
+                                <br>
+                                <span style="color:#a6a6a6">&copy; kmk7 @ st-andrews</span>
+                            </p>
+                        </div>
                     </ion-content>
                 </ion-side-menu>
             </ion-pane>
