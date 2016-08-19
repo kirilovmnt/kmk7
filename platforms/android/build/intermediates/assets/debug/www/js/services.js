@@ -260,7 +260,7 @@ angular.module('app.services', [])
 
                 var confirmPopup = $ionicPopup.confirm({
                     title: "Use NextBuses live data",
-                    template: "Do you want to use live departures data from NextBuses for this query?<br>(limited and slower queries)",
+                    template: "Do you want to use live departures data from NextBuses for this query?<br>(limited and slower queries with no information about the set route)",
                     cancelText: "No",
                     okText: "Yes"
                 });
@@ -312,10 +312,13 @@ angular.module('app.services', [])
         geoCoder.query = function (searchInput) {
             var deferred = $q.defer()
             if (typeof (searchMode.address) != "undefined" &&
-                //(searchMode.lastAddressSearch.includes(searchInput) ||
-                //searchMode.lastFormattedAddress.includes(searchInput))) { -bug with a missing method "includes"
+                //          bug with a missing method "includes"
+                //(searchMode.lastAddressSearch.includes(searchInput) || 
+                //searchMode.lastFormattedAddress.includes(searchInput))) {
+
                 (searchMode.lastAddressSearch.indexOf(searchInput) >= 0 ||
                     searchMode.lastFormattedAddress.indexOf(searchInput) >= 0)) {
+
                 deferred.resolve(false)
             } else {
                 geoCoder.sameAddress = false

@@ -225,7 +225,13 @@ angular.module('app.controllers', [])
                     })
                 })
                 .error(function () {
-                    alert("Error retrieving the whole route for selected bus")
+                    $ionicPopup.alert({
+                        title: "Error Drawing Whole Route!",
+                        template: "Error retrieving the route for bus " + line + "<br>" +
+                            "The resons could be:<br>" +
+                            "&nbsp;&nbsp;1. Missing information for the time of request<br>" +
+                            "&nbsp;&nbsp;2. You have chosen a request through NextBuses API"
+                    });
                 })
             if ($scope.busForTracking) {
 
@@ -256,7 +262,7 @@ angular.module('app.controllers', [])
 
         //watchers
         $scope.$on('$ionicView.afterEnter', function () {
-            //   mapResize.thisMap(thisTab) //bug fix for broken maps on resize
+            mapResize.thisMap(thisTab) //bug fix for broken maps on resize
             if (geoServ.initCoords && $scope.searchMode.mode == "nearby") {
                 document.getElementById("trackingSearch").value = geoServ.initCoords.lat + ", " + geoServ.initCoords.lng
             }
@@ -305,13 +311,3 @@ angular.module('app.controllers', [])
             $ionicTabsDelegate.select(0);
         });
     }])
-
-
-
-//    //disable and enable dragging
-//    $scope.disableSideDrag = function () {
-//        $ionicSideMenuDelegate.canDragContent(false)
-//    }
-//    $scope.enableSideDrag = function () {
-//        $ionicSideMenuDelegate.canDragContent(true)
-//    }

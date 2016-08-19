@@ -260,7 +260,7 @@ angular.module('app.services', [])
 
                 var confirmPopup = $ionicPopup.confirm({
                     title: "Use NextBuses live data",
-                    template: "Do you want to use live departures data from NextBuses for this query?<br>(limited and slower queries)",
+                    template: "Do you want to use live departures data from NextBuses for this query?<br>(limited and slower queries with no information about the set route)",
                     cancelText: "No",
                     okText: "Yes"
                 });
