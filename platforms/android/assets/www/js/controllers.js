@@ -80,15 +80,23 @@ angular.module('app.controllers', [])
                 $scope.busForTracking = {}
                 $scope.busForTracking.line = prompt("Which bus are you on?")
                 $scope.busForTracking.trace = []
-                if (!$scope.busForTracking.line ||
-                    isNaN(Number($scope.busForTracking.line))) {
+                if ($scope.busForTracking.line) {
+                    var a = $scope.busForTracking.line.replace(/[^0-9]/g, "")
+                    if (a.length) {
+                        geoServ.trackLocation(thisTab)
+                    } else {
+                        $ionicPopup.alert({
+                            title: "Wrong input",
+                            template: "No numbers found in your input!"
+                        });
+                        this.streamLocation = false
+                    }
+                } else {
                     $ionicPopup.alert({
-                        title: "Wrong or empty input",
-                        template: "Please use only numbers!"
+                        title: "Empty input",
+                        template: "Please use numbers and optional letters!"
                     });
                     this.streamLocation = false
-                } else {
-                    geoServ.trackLocation(thisTab)
                 }
             } else {
                 navigator.geolocation.clearWatch(geoServ.watchID)
@@ -130,9 +138,9 @@ angular.module('app.controllers', [])
         }
         var assignActiveTrace = function (busesList) {
             if ($scope.busForTracking) {
-                var traceLineNumber = $scope.busForTracking.line.replace((/[^0-9]/g), "")
+                var traceLineNumber = $scope.busForTracking.line.toLowerCase()
                 for (i = 0; i < busesList.length; i++) {
-                    var busLineNumber = busesList[i].line.replace((/[^0-9]/g), "")
+                    var busLineNumber = busesList[i].line.toLowerCase()
                     if (traceLineNumber == busLineNumber) {
                         busesList[i].trace = true
                     } else {
@@ -239,8 +247,8 @@ angular.module('app.controllers', [])
                 for (i = 0; i < trace.length; i++) {
                     trace[i].marker.setMap(null)
                 }
-                var traceLineNumber = $scope.busForTracking.line.replace((/[^0-9]/g), "")
-                var busLineNumber = bus.line.replace((/[^0-9]/g), "")
+                var traceLineNumber = $scope.busForTracking.line.toLowerCase()
+                var busLineNumber = bus.line.toLowerCase()
                 if (traceLineNumber == busLineNumber) {
                     $ionicPopup.alert({
                         title: "Live GPS Trace",
